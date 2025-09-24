@@ -2,42 +2,69 @@ version: '3.8'
 
 services:
   db:
-    image: mysql:5.7.42
+    image: mysql:8.0.39
     container_name: wordpress_db
     restart: unless-stopped
+    user: "999:999"  # mysql user
     environment:
       MYSQL_DATABASE: "${WP_DB_NAME}"
       MYSQL_USER: "${WP_DB_USER}"
       MYSQL_PASSWORD: "${WP_DB_PASSWORD}"
       MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+      MYSQL_ROOT_HOST: "localhost"
     volumes:
       - db_data:/var/lib/mysql
+      - ./mysql-conf:/etc/mysql/conf.d:ro
     networks:
-      - web
+      - db_network
     healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 30s
       timeout: 10s
       retries: 5
+      start_period: 60s
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   wordpress:
-    image: wordpress:6.3.1-php8.1-fpm
+    image: wordpress:6.6.2-apache
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: unless-stopped
     environment:
       WORDPRESS_DB_HOST: db:3306
       WORDPRESS_DB_USER: "${WP_DB_USER}"
       WORDPRESS_DB_PASSWORD: "${WP_DB_PASSWORD}"
       WORDPRESS_DB_NAME: "${WP_DB_NAME}"
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_DEBUG', false);
+        define('WP_DEBUG_LOG', false);
+        define('WP_DEBUG_DISPLAY', false);
+        define('SCRIPT_DEBUG', false);
+        define('DISALLOW_FILE_EDIT', true);
+        define('DISALLOW_FILE_MODS', true);
+        define('AUTOMATIC_UPDATER_DISABLED', true);
+        define('WP_POST_REVISIONS', 3);
+        define('AUTOSAVE_INTERVAL', 300);
+        define('WP_MEMORY_LIMIT', '256M');
     volumes:
       - wordpress_data:/var/www/html
     networks:
       - web
+      - db_network
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=web"
@@ -45,23 +72,57 @@ services:
       - "traefik.http.routers.wordpress.entrypoints=websecure"
       - "traefik.http.routers.wordpress.tls=true"
       - "traefik.http.routers.wordpress.tls.certresolver=mytlschallenge"
+      - "traefik.http.services.wordpress.loadbalancer.server.port=80"
+      # Security headers
+      - "traefik.http.routers.wordpress.middlewares=wordpress-headers@docker"
+      - "traefik.http.middlewares.wordpress-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.wordpress-headers.headers.sslRedirect=true"
+      - "traefik.http.middlewares.wordpress-headers.headers.browserXSSFilter=true"
+      - "traefik.http.middlewares.wordpress-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.wordpress-headers.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.wordpress-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.wordpress-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.wordpress-headers.headers.stsPreload=true"
+      - "traefik.http.middlewares.wordpress-headers.headers.customRequestHeaders.X-Forwarded-Proto=https"
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 1G
+          cpus: '0.8'
+        reservations:
+          memory: 256M
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/wp-admin/install.php || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   phpmyadmin:
-    image: phpmyadmin/phpmyadmin:5.3.1
+    image: phpmyadmin/phpmyadmin:5.2.1
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: unless-stopped
+    user: "www-data:www-data"
     environment:
       PMA_HOST: db
-      PMA_USER: "${WP_DB_USER}"
-      PMA_PASSWORD: "${WP_DB_PASSWORD}"
-      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 0
+      PMA_ABSOLUTE_URI: "https://pma.example.com/"
+      HIDE_PHP_VERSION: "true"
+      UPLOAD_LIMIT: "128M"
+      MEMORY_LIMIT: "512M"
     networks:
       - web
+      - db_network
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=web"
@@ -69,14 +130,149 @@ services:
       - "traefik.http.routers.phpmyadmin.entrypoints=websecure"
       - "traefik.http.routers.phpmyadmin.tls=true"
       - "traefik.http.routers.phpmyadmin.tls.certresolver=mytlschallenge"
-      - "traefik.http.routers.phpmyadmin.middlewares=auth"
-      - "traefik.http.middlewares.auth.basicauth.users=${PMA_BASIC_AUTH}"  # username:password (hashed or plain)
+      - "traefik.http.routers.phpmyadmin.middlewares=pma-auth,pma-ipwhitelist"
+      # Basic Authentication (optional, for extra security)
+      - "traefik.http.middlewares.pma-auth.basicauth.users=${PMA_BASIC_AUTH}"
+      # IP Whitelist - Replace YOUR_HOME_IP with your actual home IP address
+      - "traefik.http.middlewares.pma-ipwhitelist.ipwhitelist.sourcerange=${PMA_ALLOWED_IPS}"
+      # Security headers
+      - "traefik.http.middlewares.pma-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.pma-headers.headers.sslRedirect=true"
+      - "traefik.http.middlewares.pma-headers.headers.browserXSSFilter=true"
+      - "traefik.http.middlewares.pma-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.pma-headers.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.pma-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.pma-headers.headers.customRequestHeaders.X-Frame-Options=DENY"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.3'
+        reservations:
+          memory: 128M
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/index.php || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Backup service for WordPress data and database
+  backup:
+    image: alpine:3.19
+    depends_on:
+      - db
+      - wordpress
+    restart: "no"
+    volumes:
+      - wordpress_data:/wordpress:ro
+      - db_data:/db:ro
+      - ./backups:/backups
+    networks:
+      - db_network
+    command: |
+      sh -c "
+        apk add --no-cache mysql-client tar gzip &&
+        DATE=$$(date +%Y%m%d_%H%M%S) &&
+        echo 'Creating WordPress files backup...' &&
+        tar -czf /backups/wordpress_files_$$DATE.tar.gz -C /wordpress . &&
+        echo 'Creating database backup...' &&
+        mysqldump -h db -u $$WP_DB_USER -p$$WP_DB_PASSWORD $$WP_DB_NAME > /backups/wordpress_db_$$DATE.sql &&
+        gzip /backups/wordpress_db_$$DATE.sql &&
+        echo 'Backup completed successfully'
+      "
+    environment:
+      - WP_DB_USER
+      - WP_DB_PASSWORD  
+      - WP_DB_NAME
+    profiles:
+      - backup
+
+  # Automated scheduled backup service
+  backup-scheduler:
+    image: alpine:3.19
+    depends_on:
+      - db
+      - wordpress
+    restart: unless-stopped
+    volumes:
+      - wordpress_data:/wordpress:ro
+      - db_data:/db:ro
+      - ./backups:/backups
+      - ./scripts:/scripts:ro
+    networks:
+      - db_network
+    environment:
+      - WP_DB_USER
+      - WP_DB_PASSWORD  
+      - WP_DB_NAME
+      - BACKUP_SCHEDULE=${BACKUP_SCHEDULE:-0 2 * * *}  # Default: 2 AM daily
+      - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-7}
+    command: |
+      sh -c '
+        apk add --no-cache mysql-client tar gzip &&
+        echo "Backup scheduler started with schedule: $$BACKUP_SCHEDULE" &&
+        chmod +x /scripts/backup.sh &&
+        echo "$$BACKUP_SCHEDULE /scripts/backup.sh" > /etc/crontabs/root &&
+        crond -f -l 2
+      '
+    profiles:
+      - scheduled-backup
+
+  # Restore service for WordPress data and database
+  restore:
+    image: alpine:3.19
+    depends_on:
+      - db
+    restart: "no"
+    volumes:
+      - wordpress_data:/wordpress
+      - db_data:/db:ro
+      - ./backups:/backups
+      - ./scripts:/scripts:ro
+    networks:
+      - db_network
+    environment:
+      - WP_DB_USER
+      - WP_DB_PASSWORD  
+      - WP_DB_NAME
+    command: |
+      sh -c '
+        apk add --no-cache mysql-client tar gzip &&
+        chmod +x /scripts/restore.sh &&
+        /scripts/restore.sh "$$@"
+      '
+    profiles:
+      - restore
 
 volumes:
   db_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/mysql
   wordpress_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/wordpress
 
 networks:
   web:
     external: true
     name: web
+  db_network:
+    internal: true
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24

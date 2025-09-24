@@ -1,70 +1,70 @@
 services:
-  # traefik:
-  #   image: "traefik"
-  #   restart: always
-  #   command:
-  #     - "--api=true"
-  #     - "--api.insecure=true"
-  #     - "--providers.docker=true"
-  #     - "--providers.docker.exposedbydefault=false"
-  #     - "--entrypoints.web.address=:80"
-  #     - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-  #     - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-  #     - "--entrypoints.websecure.address=:443"
-  #     - "--certificatesresolvers.mytlschallenge.acme.tlschallenge=true"
-  #     - "--certificatesresolvers.mytlschallenge.acme.email=${SSL_EMAIL}"
-  #     - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #     - "8090:8080"
-  #   volumes:
-  #     - traefik_data:/letsencrypt
-  #     - /var/run/docker.sock:/var/run/docker.sock:ro
-  #   labels:
-  #   - "traefik.enable=true"
-  #   - "traefik.http.routers.traefik-dashboard.rule=Host(`your-dashboard-host`)" # Optional, for host-based routing
-  #   - "traefik.http.routers.traefik-dashboard.entrypoints=dashboard"
-  #   - "traefik.http.routers.traefik-dashboard.service=api@internal"
+  traefik:
+    image: "traefik"
+    restart: always
+    command:
+      - "--api=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.mytlschallenge.acme.tlschallenge=true"
+      - "--certificatesresolvers.mytlschallenge.acme.email=${SSL_EMAIL}"
+      - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8090:8080"
+    volumes:
+      - traefik_data:/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+    - "traefik.enable=true"
+    - "traefik.http.routers.traefik-dashboard.rule=Host(`your-dashboard-host`)" # Optional, for host-based routing
+    - "traefik.http.routers.traefik-dashboard.entrypoints=dashboard"
+    - "traefik.http.routers.traefik-dashboard.service=api@internal"
 
-  # n8n:
-  #   image: docker.n8n.io/n8nio/n8n
-  #   restart: always
-  #   ports:
-  #     - "127.0.0.1:5678:5678"
-  #   labels:
-  #     - traefik.enable=true
-  #     - traefik.http.routers.n8n.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)
-  #     - traefik.http.routers.n8n.tls=true
-  #     - traefik.http.routers.n8n.entrypoints=web,websecure
-  #     - traefik.http.routers.n8n.tls.certresolver=mytlschallenge
-  #     - traefik.http.middlewares.n8n.headers.SSLRedirect=true
-  #     - traefik.http.middlewares.n8n.headers.STSSeconds=315360000
-  #     - traefik.http.middlewares.n8n.headers.browserXSSFilter=true
-  #     - traefik.http.middlewares.n8n.headers.contentTypeNosniff=true
-  #     - traefik.http.middlewares.n8n.headers.forceSTSHeader=true
-  #     - traefik.http.middlewares.n8n.headers.SSLHost=${DOMAIN_NAME}
-  #     - traefik.http.middlewares.n8n.headers.STSIncludeSubdomains=true
-  #     - traefik.http.middlewares.n8n.headers.STSPreload=true
-  #     - traefik.http.routers.n8n.middlewares=n8n@docker
-  #     - DB_TYPE=postgresdb
-  #     - DB_POSTGRESDB_HOST=postgres
-  #     - DB_POSTGRESDB_PORT=5432
-  #     - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
-  #     - DB_POSTGRESDB_USER=${POSTGRES_NON_ROOT_USER}
-  #     - DB_POSTGRESDB_PASSWORD=${POSTGRES_NON_ROOT_PASSWORD}
-  #   environment:
-  #     - N8N_HOST=${SUBDOMAIN}.${DOMAIN_NAME}
-  #     - N8N_PORT=5678
-  #     - N8N_PROTOCOL=https
-  #     - NODE_ENV=production
-  #     - WEBHOOK_URL=https://${SUBDOMAIN}.${DOMAIN_NAME}/
-  #     - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
-  #   links:
-  #     - postgres
-  #   volumes:
-  #     - n8n_data:/home/node/.n8n
-  #     - ./local-files:/files
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    restart: always
+    ports:
+      - "127.0.0.1:5678:5678"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.n8n.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)
+      - traefik.http.routers.n8n.tls=true
+      - traefik.http.routers.n8n.entrypoints=web,websecure
+      - traefik.http.routers.n8n.tls.certresolver=mytlschallenge
+      - traefik.http.middlewares.n8n.headers.SSLRedirect=true
+      - traefik.http.middlewares.n8n.headers.STSSeconds=315360000
+      - traefik.http.middlewares.n8n.headers.browserXSSFilter=true
+      - traefik.http.middlewares.n8n.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.n8n.headers.forceSTSHeader=true
+      - traefik.http.middlewares.n8n.headers.SSLHost=${DOMAIN_NAME}
+      - traefik.http.middlewares.n8n.headers.STSIncludeSubdomains=true
+      - traefik.http.middlewares.n8n.headers.STSPreload=true
+      - traefik.http.routers.n8n.middlewares=n8n@docker
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
+      - DB_POSTGRESDB_USER=${POSTGRES_NON_ROOT_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_NON_ROOT_PASSWORD}
+    environment:
+      - N8N_HOST=${SUBDOMAIN}.${DOMAIN_NAME}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - NODE_ENV=production
+      - WEBHOOK_URL=https://${SUBDOMAIN}.${DOMAIN_NAME}/
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+    links:
+      - postgres
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./local-files:/files
 
   postgres:
     image: postgres:16
@@ -86,6 +86,41 @@ services:
       retries: 10
     ports:
       - "5432:5432"
+
+  # pgadmin:
+  #   image: dpage/pgadmin4:latest  # Official image
+  #   restart: always
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}  # Set in .env
+  #     PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}  # Set in .env
+  #   depends_on:
+  #     - postgres
+  #   labels:
+  #     - traefik.enable=true
+  #     # 👇 Use your domain
+  #     - traefik.http.routers.pgadmin.rule=Host(`pgadmin.${DOMAIN_NAME}`)
+  #     - traefik.http.routers.pgadmin.entrypoints=websecure
+  #     - traefik.http.routers.pgadmin.tls=true
+  #     - traefik.http.routers.pgadmin.tls.certresolver=mytlschallenge
+  #     # 👇 Basic Auth (optional but recommended)
+  #    # - traefik.http.middlewares.pgadmin-basicauth.basicauth.users=${PGADMIN_BASIC_AUTH}
+  #     # 👇 Security Headers (same as n8n)
+  #     - traefik.http.middlewares.pgadmin-headers.headers.SSLRedirect=true
+  #     - traefik.http.middlewares.pgadmin-headers.headers.STSSeconds=315360000
+  #     - traefik.http.middlewares.pgadmin-headers.headers.browserXSSFilter=true
+  #     - traefik.http.middlewares.pgadmin-headers.headers.contentTypeNosniff=true
+  #     - traefik.http.middlewares.pgadmin-headers.headers.forceSTSHeader=true
+  #     - traefik.http.middlewares.pgadmin-headers.headers.SSLHost=${DOMAIN_NAME}
+  #     - traefik.http.middlewares.pgadmin-headers.headers.STSIncludeSubdomains=true
+  #     - traefik.http.middlewares.pgadmin-headers.headers.STSPreload=true
+  #     # Attach middlewares
+  #     - traefik.http.routers.pgadmin.middlewares=pgadmin-basicauth@docker,pgadmin-headers@docker
+  #     - traefik.http.routers.pgadmin.rule=Host(`phppgadmin.coach-bg.com`)
+  #     - traefik.http.services.pgadmin.loadbalancer.server.port=80
+
+
+
+
 volumes:
   n8n_data:
   traefik_data:
