@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:5.7.42
+    container_name: wordpress_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: "${WP_DB_NAME}"
+      MYSQL_USER: "${WP_DB_USER}"
+      MYSQL_PASSWORD: "${WP_DB_PASSWORD}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - web
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  wordpress:
+    image: wordpress:6.3.1-php8.1-fpm
+    depends_on:
+      - db
+    restart: unless-stopped
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: "${WP_DB_USER}"
+      WORDPRESS_DB_PASSWORD: "${WP_DB_PASSWORD}"
+      WORDPRESS_DB_NAME: "${WP_DB_NAME}"
+    volumes:
+      - wordpress_data:/var/www/html
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.wordpress.rule=Host(`wordpress.example.com`)"
+      - "traefik.http.routers.wordpress.entrypoints=websecure"
+      - "traefik.http.routers.wordpress.tls=true"
+      - "traefik.http.routers.wordpress.tls.certresolver=mytlschallenge"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:5.3.1
+    depends_on:
+      - db
+    restart: unless-stopped
+    environment:
+      PMA_HOST: db
+      PMA_USER: "${WP_DB_USER}"
+      PMA_PASSWORD: "${WP_DB_PASSWORD}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.phpmyadmin.rule=Host(`pma.example.com`)"
+      - "traefik.http.routers.phpmyadmin.entrypoints=websecure"
+      - "traefik.http.routers.phpmyadmin.tls=true"
+      - "traefik.http.routers.phpmyadmin.tls.certresolver=mytlschallenge"
+      - "traefik.http.routers.phpmyadmin.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.users=${PMA_BASIC_AUTH}"  # username:password (hashed or plain)
+
+volumes:
+  db_data:
+  wordpress_data:
+
+networks:
+  web:
+    external: true
+    name: web
