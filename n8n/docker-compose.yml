@@ -23,9 +23,13 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     labels:
     - "traefik.enable=true"
-    - "traefik.http.routers.traefik-dashboard.rule=Host(`your-dashboard-host`)" # Optional, for host-based routing
-    - "traefik.http.routers.traefik-dashboard.entrypoints=dashboard"
+    - "traefik.http.routers.traefik-dashboard.rule=Host(`${TRAEFIK_DASHBOARD_HOST:-traefik.${DOMAIN_NAME}}`)"
+    - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+    - "traefik.http.routers.traefik-dashboard.tls=true"
+    - "traefik.http.routers.traefik-dashboard.tls.certresolver=mytlschallenge"
     - "traefik.http.routers.traefik-dashboard.service=api@internal"
+    - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth"
+    - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:$$2y$$10$$2b2cu2.VJrTmPaOkzPvCme3UxFGl1mw/m4B3oJ8BvMC1zPK5x1x2K"  # admin:admin (change this!)
 
   n8n:
     image: docker.n8n.io/n8nio/n8n:latest
@@ -47,19 +51,38 @@ services:
       - traefik.http.middlewares.n8n.headers.STSIncludeSubdomains=true
       - traefik.http.middlewares.n8n.headers.STSPreload=true
       - traefik.http.routers.n8n.middlewares=n8n@docker
-      - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_HOST=postgres
-      - DB_POSTGRESDB_PORT=5432
-      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
-      - DB_POSTGRESDB_USER=${POSTGRES_NON_ROOT_USER}
-      - DB_POSTGRESDB_PASSWORD=${POSTGRES_NON_ROOT_PASSWORD}
     environment:
+      # Core N8N Configuration
       - N8N_HOST=${SUBDOMAIN}.${DOMAIN_NAME}
       - N8N_PORT=5678
       - N8N_PROTOCOL=https
       - NODE_ENV=production
       - WEBHOOK_URL=https://${SUBDOMAIN}.${DOMAIN_NAME}/
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      
+      # Database Configuration
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
+      - DB_POSTGRESDB_USER=${POSTGRES_NON_ROOT_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_NON_ROOT_PASSWORD}
+      
+      # Security Configuration
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      
+      # Performance and Features
+      - N8N_RUNNERS_ENABLED=true
+      - DB_SQLITE_POOL_SIZE=3
+      
+      # Optional: Encryption key
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:-}
+      
+      # Optional: Basic Authentication
+      - N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE:-false}
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD:-}
     links:
       - postgres
     volumes:

@@ -187,13 +187,13 @@ start_services() {
     mkdir -p local-files
     
     # Start services
-    docker-compose up -d
+    docker compose up -d
     
     if [[ $? -eq 0 ]]; then
         log_success "Services started successfully!"
         echo
         log_info "Service Status:"
-        docker-compose ps
+        docker compose ps
         echo
         log_info "Access your N8N installation:"
         source .env
@@ -210,7 +210,7 @@ start_services() {
 # Function to stop services
 stop_services() {
     log_info "Stopping N8N services..."
-    docker-compose down
+    docker compose down
     log_success "Services stopped"
 }
 
@@ -221,9 +221,9 @@ show_logs() {
     read -p "Enter service name (or 'all' for all services): " service
     
     if [[ "$service" == "all" ]]; then
-        docker-compose logs -f
+        docker compose logs -f
     else
-        docker-compose logs -f "$service"
+        docker compose logs -f "$service"
     fi
 }
 
@@ -242,9 +242,9 @@ check_requirements() {
     fi
     
     # Check Docker Compose
-    if command -v docker-compose &> /dev/null; then
+    if command -v docker compose &> /dev/null; then
         log_success "Docker Compose is installed"
-        docker-compose --version
+        docker compose --version
     else
         log_error "Docker Compose is not installed"
         echo "Please install Docker Compose"
@@ -304,7 +304,7 @@ main() {
             5) show_logs ;;
             6) 
                 if [[ -f .env ]]; then
-                    docker-compose ps
+                    docker compose ps
                 else
                     log_error ".env file not found"
                 fi
