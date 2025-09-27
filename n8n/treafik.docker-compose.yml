@@ -1,8 +1,6 @@
 services:
   traefik:
-    build:
-      context: .
-      dockerfile: Dockerfile.traefik
+    image: "traefik:v3.0"
     restart: always
     container_name: traefik
     security_opt:
@@ -43,10 +41,10 @@ services:
       - "traefik.http.routers.traefik-dashboard.tls=true"
       - "traefik.http.routers.traefik-dashboard.tls.certresolver=mytlschallenge"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
-      - "traefik.http.routers.traefik-dashboard.middlewares=cloudflare-real-ip@file,traefik-auth,traefik-ip-whitelist,secure-headers@file"
+      - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth,secure-headers@file"
       # Note: In .env file, password hashes must have each $ escaped as $$ (see TRAEFIK-ENV-GUIDE.md)
       - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
-      - "traefik.http.middlewares.traefik-ip-whitelist.ipallowlist.sourcerange=127.0.0.1/32,${ADMIN_IP_RANGE:-192.168.1.0/24}"
+      # "traefik.http.middlewares.traefik-ip-whitelist.ipallowlist.sourcerange=127.0.0.1/32,${ADMIN_IP_RANGE}"
       # Add security headers
       # Security headers are now defined in the dynamic configuration file
 
