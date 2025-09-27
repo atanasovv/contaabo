@@ -41,7 +41,7 @@ services:
       - "traefik.http.routers.traefik-dashboard.tls=true"
       - "traefik.http.routers.traefik-dashboard.tls.certresolver=mytlschallenge"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
-      - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth,traefik-ip-whitelist,secure-headers@file"
+      - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth,secure-headers@file"
       # Note: In .env file, password hashes must have each $ escaped as $$ (see TRAEFIK-ENV-GUIDE.md)
       - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
       # "traefik.http.middlewares.traefik-ip-whitelist.ipallowlist.sourcerange=127.0.0.1/32,${ADMIN_IP_RANGE}"
