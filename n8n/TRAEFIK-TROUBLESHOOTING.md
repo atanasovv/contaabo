@@ -14,8 +14,9 @@ ERR error="middleware \"default-rate-limit@file\" does not exist"
 - Make sure file extensions are `.yaml` or `.yml`
 - Verify the syntax of your dynamic configuration files
 
-### 2. TLS Certificate Challenges
+### 2. Let's Encrypt Certificate Challenges
 
+#### Issue: TLS Challenge Failure
 ```
 ERR Unable to obtain ACME certificate... Cannot negotiate ALPN protocol "acme-tls/1" for tls-alpn-01 challenge
 ```
@@ -26,16 +27,61 @@ ERR Unable to obtain ACME certificate... Cannot negotiate ALPN protocol "acme-tl
   - "--certificatesresolvers.mytlschallenge.acme.httpchallenge=true"
   - "--certificatesresolvers.mytlschallenge.acme.httpchallenge.entrypoint=web"
   ```
-- Make sure port 80 is accessible from the internet
-- Don't redirect HTTP to HTTPS until the certificate is generated
 
-### 3. Traefik Version Compatibility
+#### Issue: HTTP Challenge Failure
+```
+ERR Unable to obtain ACME certificate... Invalid response from http://traefik.example.com/.well-known/acme-challenge/... 404
+```
+
+**Solution:**
+1. **Temporarily disable HTTP to HTTPS redirection:**
+   ```yaml
+   # Comment out these lines until you have certificates
+   # - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+   # - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+   ```
+
+2. **Verify DNS is pointing correctly**
+   - Make sure your domain resolves to your server's public IP
+   - Try: `host traefik.example.com`
+
+3. **Check port 80 is accessible**
+   - Ensure your firewall allows port 80 traffic
+   - Test with: `curl -v http://traefik.example.com`
+
+4. **Clean Traefik's ACME data and try again**
+   - Stop Traefik: `docker compose -f treafik.docker-compose.yml down`
+   - Remove the volume: `docker volume rm traefik_data`
+   - Restart Traefik: `docker compose -f treafik.docker-compose.yml up -d`
+   
+5. **Use the provided helper script:**
+   ```bash
+   ./fix-traefik-certs.sh
+   ```
+
+### 3. Deprecated Middlewares
+
+```
+WRN Middleware "traefik-ip-whitelist@docker" of type IPWhiteList is deprecated, please use IPAllowList instead.
+```
+
+**Solution:**
+- Update any occurrences of `ipwhitelist` to `ipallowlist`:
+  ```yaml
+  # From:
+  - "traefik.http.middlewares.traefik-ip-whitelist.ipwhitelist.sourcerange=127.0.0.1/32,192.168.1.0/24"
+  
+  # To:
+  - "traefik.http.middlewares.traefik-ip-whitelist.ipallowlist.sourcerange=127.0.0.1/32,192.168.1.0/24"
+  ```
+
+### 4. Traefik Version Compatibility
 
 - The latest Traefik versions (v3.x) may have syntax differences
 - Stick to well-tested versions like v2.10.4 or v3.0 for stability
 - Check the Traefik documentation for your specific version
 
-### 4. Password Escaping in Docker Compose
+### 5. Password Escaping in Docker Compose
 
 - Remember to escape dollar signs in password hashes:
   - Original: `admin:$apr1$rO5oPdXm$UzGzM7rVzNDrbF3kGt2JY/`
