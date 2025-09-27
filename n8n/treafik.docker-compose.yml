@@ -20,6 +20,12 @@ services:
       # - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       # - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.metrics.address=:8082"
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.entryPoint=metrics"
+      - "--metrics.prometheus.addEntryPointsLabels=true"
+      - "--metrics.prometheus.addServicesLabels=true"
+      - "--metrics.prometheus.manualRouting=true"
       - "--certificatesresolvers.mytlschallenge.acme.httpchallenge=true"
       - "--certificatesresolvers.mytlschallenge.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.mytlschallenge.acme.email=${SSL_EMAIL}"
@@ -29,6 +35,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "8082:8082"  # Metrics port for Prometheus
       # Dashboard port is not exposed directly to the internet
     volumes:
       - traefik_data:/letsencrypt
@@ -36,12 +43,20 @@ services:
       - ./traefik_dynamic_conf:/etc/traefik/dynamic_conf
     labels:
       - "traefik.enable=true"
+      # Dashboard configuration
       - "traefik.http.routers.traefik-dashboard.rule=Host(`${TRAEFIK_DASHBOARD_HOST:-traefik.${DOMAIN_NAME}}`)"
       - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
       - "traefik.http.routers.traefik-dashboard.tls=true"
       - "traefik.http.routers.traefik-dashboard.tls.certresolver=mytlschallenge"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
       - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth,secure-headers@file"
+      # Metrics configuration
+      - "traefik.http.routers.metrics.rule=Host(`${METRICS_HOST:-metrics.${DOMAIN_NAME}}`)"
+      - "traefik.http.routers.metrics.service=prometheus@internal"
+      - "traefik.http.routers.metrics.entrypoints=metrics"
+      - "traefik.http.routers.metrics.middlewares=metrics-auth"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=8082"
+      - "traefik.http.middlewares.metrics-auth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
       # Note: In .env file, password hashes must have each $ escaped as $$ (see TRAEFIK-ENV-GUIDE.md)
       - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
       # "traefik.http.middlewares.traefik-ip-whitelist.ipallowlist.sourcerange=127.0.0.1/32,${ADMIN_IP_RANGE}"
