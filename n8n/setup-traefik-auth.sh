@@ -1,11 +1,12 @@
 #!/bin/bash
 
 # Script to generate secure password for Traefik basic authentication
-# and update the .env file
+# with proper Docker Compose variable escaping
 
 # Colors for output
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Check if htpasswd is installed
@@ -51,6 +52,9 @@ fi
 # Generate password hash
 hashed_auth=$(htpasswd -nb "$username" "$password")
 
+# Escape $ for Docker Compose by replacing each $ with $$
+escaped_auth=$(echo "$hashed_auth" | sed 's/\$/\$\$/g')
+
 # Ask for admin IP range
 read -p "Enter your admin IP range for whitelist access [current IP only]: " ip_range
 
@@ -67,9 +71,9 @@ fi
 
 # Update the .env file
 if grep -q "TRAEFIK_BASIC_AUTH=" .env; then
-    sed -i "s|TRAEFIK_BASIC_AUTH=.*|TRAEFIK_BASIC_AUTH=${hashed_auth}|" .env
+    sed -i "s|TRAEFIK_BASIC_AUTH=.*|TRAEFIK_BASIC_AUTH=${escaped_auth}|" .env
 else
-    echo "TRAEFIK_BASIC_AUTH=${hashed_auth}" >> .env
+    echo "TRAEFIK_BASIC_AUTH=${escaped_auth}" >> .env
 fi
 
 if grep -q "ADMIN_IP_RANGE=" .env; then
@@ -80,5 +84,12 @@ fi
 
 echo -e "${GREEN}Authentication credentials updated successfully!${NC}"
 echo -e "${GREEN}Admin access restricted to IP range: ${ip_range}${NC}"
+
+echo -e "${BLUE}Original htpasswd output:${NC}"
+echo "  $hashed_auth"
+echo -e "${BLUE}Docker Compose escaped version:${NC}"
+echo "  $escaped_auth"
+echo -e "${YELLOW}The escaped version is automatically saved to your .env file${NC}"
+
 echo -e "${YELLOW}You can now start Traefik with:${NC}"
-echo -e "  docker compose -f treafik.docker-compose.yml up -d"
+echo "  docker compose -f treafik.docker-compose.yml up -d"
