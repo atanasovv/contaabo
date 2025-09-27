@@ -3,17 +3,19 @@ services:
     image: mysql:8.0.39
     container_name: wordpress_db
     restart: unless-stopped
-    # Removed user restriction to avoid permission issues
+    # Using default MySQL user (not specifying user)
     environment:
       MYSQL_DATABASE: "${WP_DB_NAME}"
       MYSQL_USER: "${WP_DB_USER}"
       MYSQL_PASSWORD: "${WP_DB_PASSWORD}"
       MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
-      MYSQL_ROOT_HOST: "localhost"
+      MYSQL_ROOT_HOST: "%"  # Allow root connections from any host
+      # Additional settings for stability
+      MYSQL_INITDB_SKIP_TZINFO: 1
     volumes:
-      - db_data:/var/lib/mysql
+      # Using a regular Docker volume instead of bind mount
+      - mysql_data:/var/lib/mysql
       - ./mysql-conf:/etc/mysql/conf.d:ro
-      - mysql_logs:/var/log/mysql
     networks:
       - default
     healthcheck:
@@ -164,106 +166,101 @@ services:
       start_period: 30s
 
   # Backup service for WordPress data and database
-  backup:
-    image: alpine:3.19
-    depends_on:
-      - db
-      - wordpress
-    restart: "no"
-    volumes:
-      - wordpress_data:/wordpress:ro
-      - db_data:/db:ro
-      - ./backups:/backups
-    networks:
-      - db_network
-    command: |
-      sh -c "
-        apk add --no-cache mysql-client tar gzip &&
-        DATE=$$(date +%Y%m%d_%H%M%S) &&
-        echo 'Creating WordPress files backup...' &&
-        tar -czf /backups/wordpress_files_$$DATE.tar.gz -C /wordpress . &&
-        echo 'Creating database backup...' &&
-        mysqldump -h db -u $$WP_DB_USER -p$$WP_DB_PASSWORD $$WP_DB_NAME > /backups/wordpress_db_$$DATE.sql &&
-        gzip /backups/wordpress_db_$$DATE.sql &&
-        echo 'Backup completed successfully'
-      "
-    environment:
-      - WP_DB_USER
-      - WP_DB_PASSWORD  
-      - WP_DB_NAME
-    profiles:
-      - backup
+  # backup:
+  #   image: alpine:3.19
+  #   depends_on:
+  #     - db
+  #     - wordpress
+  #   restart: "no"
+  #   volumes:
+  #     - wordpress_data:/wordpress:ro
+  #     - db_data:/db:ro
+  #     - ./backups:/backups
+  #   networks:
+  #     - db_network
+  #   command: |
+  #     sh -c "
+  #       apk add --no-cache mysql-client tar gzip &&
+  #       DATE=$$(date +%Y%m%d_%H%M%S) &&
+  #       echo 'Creating WordPress files backup...' &&
+  #       tar -czf /backups/wordpress_files_$$DATE.tar.gz -C /wordpress . &&
+  #       echo 'Creating database backup...' &&
+  #       mysqldump -h db -u $$WP_DB_USER -p$$WP_DB_PASSWORD $$WP_DB_NAME > /backups/wordpress_db_$$DATE.sql &&
+  #       gzip /backups/wordpress_db_$$DATE.sql &&
+  #       echo 'Backup completed successfully'
+  #     "
+  #   environment:
+  #     - WP_DB_USER
+  #     - WP_DB_PASSWORD  
+  #     - WP_DB_NAME
+  #   profiles:
+  #     - backup
 
-  # Automated scheduled backup service
-  backup-scheduler:
-    image: alpine:3.19
-    depends_on:
-      - db
-      - wordpress
-    restart: unless-stopped
-    volumes:
-      - wordpress_data:/wordpress:ro
-      - db_data:/db:ro
-      - ./backups:/backups
-      - ./scripts:/scripts:ro
+  # # Automated scheduled backup service
+  # backup-scheduler:
+  #   image: alpine:3.19
+  #   depends_on:
+  #     - db
+  #     - wordpress
+  #   restart: unless-stopped
+  #   volumes:
+  #     - wordpress_data:/wordpress:ro
+  #     - mysql_data:/db:ro
+  #     - ./backups:/backups
+  #     - ./scripts:/scripts:ro
     
-    environment:
-      - WP_DB_USER
-      - WP_DB_PASSWORD  
-      - WP_DB_NAME
-      - BACKUP_SCHEDULE=${BACKUP_SCHEDULE:-0 2 * * *}  # Default: 2 AM daily
-      - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-7}
-    command: |
-      sh -c '
-        apk add --no-cache mysql-client tar gzip &&
-        echo "Backup scheduler started with schedule: $$BACKUP_SCHEDULE" &&
-        chmod +x /scripts/backup.sh &&
-        echo "$$BACKUP_SCHEDULE /scripts/backup.sh" > /etc/crontabs/root &&
-        crond -f -l 2
-      '
-    profiles:
-      - scheduled-backup
+  #   environment:
+  #     - WP_DB_USER
+  #     - WP_DB_PASSWORD  
+  #     - WP_DB_NAME
+  #     - BACKUP_SCHEDULE=${BACKUP_SCHEDULE:-0 2 * * *}  # Default: 2 AM daily
+  #     - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-7}
+  #   command: |
+  #     sh -c '
+  #       apk add --no-cache mysql-client tar gzip &&
+  #       echo "Backup scheduler started with schedule: $$BACKUP_SCHEDULE" &&
+  #       chmod +x /scripts/backup.sh &&
+  #       echo "$$BACKUP_SCHEDULE /scripts/backup.sh" > /etc/crontabs/root &&
+  #       crond -f -l 2
+  #     '
+  #   profiles:
+  #     - scheduled-backup
 
-  # Restore service for WordPress data and database
-  restore:
-    image: alpine:3.19
-    depends_on:
-      - db
-    restart: "no"
-    volumes:
-      - wordpress_data:/wordpress
-      - db_data:/db:ro
-      - ./backups:/backups
-      - ./scripts:/scripts:ro
+  # # Restore service for WordPress data and database
+  # restore:
+  #   image: alpine:3.19
+  #   depends_on:
+  #     - db
+  #   restart: "no"
+  #   volumes:
+  #     - wordpress_data:/wordpress
+  #     - mysql_data:/db:ro
+  #     - ./backups:/backups
+  #     - ./scripts:/scripts:ro
 
-    environment:
-      - WP_DB_USER
-      - WP_DB_PASSWORD  
-      - WP_DB_NAME
-    command: |
-      sh -c '
-        apk add --no-cache mysql-client tar gzip &&
-        chmod +x /scripts/restore.sh &&
-        /scripts/restore.sh "$$@"
-      '
-    profiles:
-      - restore
+  #   environment:
+  #     - WP_DB_USER
+  #     - WP_DB_PASSWORD  
+  #     - WP_DB_NAME
+  #   command: |
+  #     sh -c '
+  #       apk add --no-cache mysql-client tar gzip &&
+  #       chmod +x /scripts/restore.sh &&
+  #       /scripts/restore.sh "$$@"
+  #     '
+  #   profiles:
+  #     - restore
 
 volumes:
-  db_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./data/mysql
+  mysql_data:
+    # Using a regular Docker-managed volume instead of bind mount
+    # This prevents permission issues during initialization
   wordpress_data:
     driver: local
     driver_opts:
       type: none
       o: bind
       device: ./data/wordpress
-  mysql_logs:
-    # Using a regular Docker volume for logs
 
 networks:
   traefik_network:
