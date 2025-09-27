@@ -5,21 +5,29 @@ services:
     restart: always
     ports:
       - "127.0.0.1:5678:5678"
+    networks:
+      - default
+      - traefik_network
     labels:
       - traefik.enable=true
+      - traefik.docker.network=traefik_network
       - traefik.http.routers.n8n.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)
       - traefik.http.routers.n8n.tls=true
       - traefik.http.routers.n8n.entrypoints=web,websecure
       - traefik.http.routers.n8n.tls.certresolver=mytlschallenge
-      - traefik.http.middlewares.n8n.headers.SSLRedirect=true
-      - traefik.http.middlewares.n8n.headers.STSSeconds=315360000
-      - traefik.http.middlewares.n8n.headers.browserXSSFilter=true
-      - traefik.http.middlewares.n8n.headers.contentTypeNosniff=true
-      - traefik.http.middlewares.n8n.headers.forceSTSHeader=true
-      - traefik.http.middlewares.n8n.headers.SSLHost=${DOMAIN_NAME}
-      - traefik.http.middlewares.n8n.headers.STSIncludeSubdomains=true
-      - traefik.http.middlewares.n8n.headers.STSPreload=true
-      - traefik.http.routers.n8n.middlewares=n8n@docker
+      # Define security headers middleware
+      - traefik.http.middlewares.n8n-headers.headers.SSLRedirect=true
+      - traefik.http.middlewares.n8n-headers.headers.STSSeconds=315360000
+      - traefik.http.middlewares.n8n-headers.headers.browserXSSFilter=true
+      - traefik.http.middlewares.n8n-headers.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.n8n-headers.headers.forceSTSHeader=true
+      - traefik.http.middlewares.n8n-headers.headers.SSLHost=${DOMAIN_NAME}
+      - traefik.http.middlewares.n8n-headers.headers.STSIncludeSubdomains=true
+      - traefik.http.middlewares.n8n-headers.headers.STSPreload=true
+      # Apply the middleware to the router
+      - traefik.http.routers.n8n.middlewares=n8n-headers@docker
+      # Make sure Traefik knows which port to use for n8n
+      - traefik.http.services.n8n.loadbalancer.server.port=5678
     environment:
       # Core N8N Configuration
       - N8N_HOST=${SUBDOMAIN}.${DOMAIN_NAME}
@@ -84,3 +92,8 @@ volumes:
   n8n_data:
   traefik_data:
   db_storage:
+
+networks:
+  traefik_network:
+    external: true
+    name: traefik_network
