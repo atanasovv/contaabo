@@ -1,5 +1,8 @@
-traefik:
-    image: "traefik:v2.10.4"
+version: '3.8'
+
+services:
+  traefik:
+    image: "traefik:v5.5.3"
     restart: always
     container_name: traefik
     security_opt:
@@ -39,7 +42,7 @@ traefik:
       - "traefik.http.routers.traefik-dashboard.tls.certresolver=mytlschallenge"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
       - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth,traefik-ip-whitelist"
-      - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_AUTH_USER}"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_BASIC_AUTH:-admin:$$apr1$$rO5oPdXm$$UzGzM7rVzNDrbF3kGt2JY/}"
       - "traefik.http.middlewares.traefik-ip-whitelist.ipwhitelist.sourcerange=127.0.0.1/32,${ADMIN_IP_RANGE:-192.168.1.0/24}"
       # Add security headers
       - "traefik.http.middlewares.secure-headers.headers.forcestsheader=true"
@@ -48,4 +51,13 @@ traefik:
       - "traefik.http.middlewares.secure-headers.headers.contenttypenosniff=true"
       - "traefik.http.middlewares.secure-headers.headers.browserxssfilter=true"
       - "traefik.http.routers.traefik-dashboard.middlewares=secure-headers"
+
+networks:
+  traefik_network:
+    name: traefik_network
+    driver: bridge
+
+volumes:
+  traefik_data:
+    name: traefik_data
 
