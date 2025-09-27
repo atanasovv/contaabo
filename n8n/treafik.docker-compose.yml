@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   traefik:
-    image: "traefik:v3.5.3"
+    image: "traefik:v3.0"
     restart: always
     container_name: traefik
     security_opt:
@@ -15,15 +15,16 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      - "--providers.file.directory=/etc/traefik/dynamic_conf"
+      - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.mytlschallenge.acme.tlschallenge=true"
+      - "--certificatesresolvers.mytlschallenge.acme.httpchallenge=true"
+      - "--certificatesresolvers.mytlschallenge.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.mytlschallenge.acme.email=${SSL_EMAIL}"
       - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
-      # Rate limiting to prevent brute force attacks
-      - "--entrypoints.websecure.http.middlewares=default-rate-limit@file"
     networks:
       - traefik_network
     ports:
@@ -41,17 +42,12 @@ services:
       - "traefik.http.routers.traefik-dashboard.tls=true"
       - "traefik.http.routers.traefik-dashboard.tls.certresolver=mytlschallenge"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
-      - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth,traefik-ip-whitelist"
+      - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth,traefik-ip-whitelist,secure-headers@file"
       # Note: In .env file, password hashes must have each $ escaped as $$ (see TRAEFIK-ENV-GUIDE.md)
       - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
       - "traefik.http.middlewares.traefik-ip-whitelist.ipwhitelist.sourcerange=127.0.0.1/32,${ADMIN_IP_RANGE:-192.168.1.0/24}"
       # Add security headers
-      - "traefik.http.middlewares.secure-headers.headers.forcestsheader=true"
-      - "traefik.http.middlewares.secure-headers.headers.stsincludesubdomains=true"
-      - "traefik.http.middlewares.secure-headers.headers.stsseconds=31536000"
-      - "traefik.http.middlewares.secure-headers.headers.contenttypenosniff=true"
-      - "traefik.http.middlewares.secure-headers.headers.browserxssfilter=true"
-      - "traefik.http.routers.traefik-dashboard.middlewares=secure-headers"
+      # Security headers are now defined in the dynamic configuration file
 
 networks:
   traefik_network:
