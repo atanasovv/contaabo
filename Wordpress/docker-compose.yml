@@ -134,7 +134,7 @@ services:
       # Basic Authentication (optional, for extra security)
       - "traefik.http.middlewares.pma-auth.basicauth.users=${PMA_BASIC_AUTH}"
       # IP Whitelist - Replace YOUR_HOME_IP with your actual home IP address
-      - "traefik.http.middlewares.pma-ipwhitelist.ipwhitelist.sourcerange=${PMA_ALLOWED_IPS}"
+      #- "traefik.http.middlewares.pma-ipwhitelist.ipwhitelist.sourcerange=${PMA_ALLOWED_IPS}"
       # Security headers
       - "traefik.http.middlewares.pma-headers.headers.frameDeny=true"
       - "traefik.http.middlewares.pma-headers.headers.sslRedirect=true"
