@@ -1,0 +1,39 @@
+#### YAML Reference for n8n Service Configuration in Traefik
+# This file defines how n8n should be served through Traefik
+
+http:
+  routers:
+    n8n:
+      rule: "Host(`n8n.example.com`)"
+      entrypoints:
+        - "websecure"
+      service: "n8n"
+      middlewares:
+        - "cloudflare-real-ip@file"
+        - "n8n-headers@file"
+        - "secure-headers@file"
+        # Uncomment to enable maintenance mode
+        # - "n8n-maintenance@file"
+        # Uncomment to enable country blocking
+        # - "country-whitelist@file"
+      tls:
+        certResolver: "mytlschallenge"
+        
+    n8n-api:
+      rule: "Host(`n8n.example.com`) && PathPrefix(`/api/`)"
+      entrypoints:
+        - "websecure"
+      service: "n8n"
+      middlewares:
+        - "cloudflare-real-ip@file"
+        - "n8n-headers@file"
+        - "n8n-api-ratelimit@file"
+        - "secure-headers@file"
+      tls:
+        certResolver: "mytlschallenge"
+
+  services:
+    n8n:
+      loadBalancer:
+        servers:
+          - url: "http://n8n:5678"

@@ -1,0 +1,34 @@
+#### YAML Reference for Traefik Cache Plugin
+# This plugin provides basic response caching for static content
+# Can significantly improve WordPress performance
+
+http:
+  middlewares:
+    static-cache:
+      plugin:
+        cache:
+          # Cache static assets for 1 day
+          maxExpiry: 86400
+          # Skip caching if these headers are present
+          ignoreHeaders:
+            - "Cache-Control"
+          # Only cache GET requests
+          methods:
+            - "GET"
+          # Only cache responses with these status codes
+          statusCodes:
+            - "200"
+            - "304"
+          # Only cache these content types
+          contentTypes:
+            - "text/css"
+            - "text/javascript"
+            - "application/javascript"
+            - "image/jpeg"
+            - "image/png"
+            - "image/webp"
+            - "image/svg+xml"
+            - "image/gif"
+            - "font/woff"
+            - "font/woff2"
+            - "font/ttf"

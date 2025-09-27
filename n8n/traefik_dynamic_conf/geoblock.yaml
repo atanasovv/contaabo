@@ -1,0 +1,28 @@
+#### YAML Reference for Traefik GeoBlock Plugin
+# This plugin allows you to block or allow traffic based on country codes
+# Useful to reduce spam and attacks against WordPress and n8n
+
+http:
+  middlewares:
+    country-whitelist:
+      plugin:
+        geoip:
+          # Set to false to enable blocking
+          enabled: false
+          # Only allow these countries
+          allow:
+            - "BG"  # Bulgaria
+            - "DE"  # Germany
+            - "FR"  # France
+            - "NL"  # Netherlands
+            - "ES"  # Spain
+            - "IT"  # Italy
+            - "SE"  # Sweden
+            # Add more allowed countries as needed
+          # Block message for disallowed countries
+          block:
+            statusCode: 403
+            body: |
+              {
+                "error": "Access denied based on your location"
+              }

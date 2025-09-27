@@ -1,0 +1,35 @@
+#### YAML Reference for Traefik Rate Limiting Plugin
+# This plugin provides more flexible rate limiting options
+# Useful to protect WordPress login and admin areas from brute force attacks
+
+http:
+  middlewares:
+    wp-login-ratelimit:
+      plugin:
+        ratelimit:
+          # Allow 5 requests in 20 seconds per client IP
+          average: 5
+          period: 20s
+          burst: 10
+          sourceCriterion:
+            requestHeaderName: "X-Forwarded-For"
+            
+    n8n-api-ratelimit:
+      plugin:
+        ratelimit:
+          # Allow 30 requests in 10 seconds for API endpoints
+          average: 30
+          period: 10s
+          burst: 60
+          sourceCriterion:
+            requestHeaderName: "X-Forwarded-For"
+            
+    general-ratelimit:
+      plugin:
+        ratelimit:
+          # General rate limit for normal browsing
+          average: 100
+          period: 1m
+          burst: 200
+          sourceCriterion:
+            requestHeaderName: "X-Forwarded-For"
