@@ -103,6 +103,9 @@ if [[ "$answer" == "y" ]]; then
     sed -i 's/^.*--entrypoints.web.http.redirections.entryPoint.to=websecure.*$/      # Temporarily disabled for certificate setup\n      # - "--entrypoints.web.http.redirections.entryPoint.to=websecure"/' treafik.docker-compose.yml
     sed -i 's/^.*--entrypoints.web.http.redirections.entrypoint.scheme=https.*$/      # Temporarily disabled for certificate setup\n      # - "--entrypoints.web.http.redirections.entrypoint.scheme=https"/' treafik.docker-compose.yml
     
+    # Remove any timeout parameters that might cause issues
+    sed -i '/.*httpchallenge.timeout=.*/d' treafik.docker-compose.yml
+    
     echo -e "${BLUE}Starting Traefik with clean state...${NC}"
     docker compose -f treafik.docker-compose.yml up -d
     

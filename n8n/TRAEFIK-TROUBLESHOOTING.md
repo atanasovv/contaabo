@@ -59,7 +59,23 @@ ERR Unable to obtain ACME certificate... Invalid response from http://traefik.ex
    ./fix-traefik-certs.sh
    ```
 
-### 3. Deprecated Middlewares
+### 3. Configuration Errors
+
+#### Issue: Timeout Parameter Not Supported
+```
+error: command traefik error: failed to decode configuration from flags: field not found, node: timeout
+```
+
+**Solution:**
+- Remove the unsupported timeout parameter:
+  ```yaml
+  # Remove this line
+  - "--certificatesresolvers.mytlschallenge.acme.httpchallenge.timeout=180"
+  ```
+- Traefik v3.0 may have a different syntax for timeouts or may not support this parameter
+- Check the documentation for your specific Traefik version
+
+### 4. Deprecated Middlewares
 
 ```
 WRN Middleware "traefik-ip-whitelist@docker" of type IPWhiteList is deprecated, please use IPAllowList instead.

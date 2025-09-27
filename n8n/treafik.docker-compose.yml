@@ -22,8 +22,6 @@ services:
       - "--entrypoints.websecure.address=:443"
       - "--certificatesresolvers.mytlschallenge.acme.httpchallenge=true"
       - "--certificatesresolvers.mytlschallenge.acme.httpchallenge.entrypoint=web"
-      # Increase timeout for DNS propagation
-      - "--certificatesresolvers.mytlschallenge.acme.httpchallenge.timeout=180"
       - "--certificatesresolvers.mytlschallenge.acme.email=${SSL_EMAIL}"
       - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
     networks:
