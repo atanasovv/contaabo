@@ -1,36 +1,5 @@
 services:
-  traefik:
-    image: "traefik"
-    restart: always
-    command:
-      - "--api=true"
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.mytlschallenge.acme.tlschallenge=true"
-      - "--certificatesresolvers.mytlschallenge.acme.email=${SSL_EMAIL}"
-      - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
-    ports:
-      - "80:80"
-      - "443:443"
-      - "8090:8080"
-    volumes:
-      - traefik_data:/letsencrypt
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    labels:
-    - "traefik.enable=true"
-    - "traefik.http.routers.traefik-dashboard.rule=Host(`${TRAEFIK_DASHBOARD_HOST:-traefik.${DOMAIN_NAME}}`)"
-    - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
-    - "traefik.http.routers.traefik-dashboard.tls=true"
-    - "traefik.http.routers.traefik-dashboard.tls.certresolver=mytlschallenge"
-    - "traefik.http.routers.traefik-dashboard.service=api@internal"
-    - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth"
-    - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:$$2y$$10$$2b2cu2.VJrTmPaOkzPvCme3UxFGl1mw/m4B3oJ8BvMC1zPK5x1x2K"  # admin:admin (change this!)
-
+  
   n8n:
     image: docker.n8n.io/n8nio/n8n:latest
     restart: always

@@ -1,0 +1,11 @@
+version: '3.8'
+
+# Define the network
+networks:
+  traefik_network:
+    name: traefik_network
+    driver: bridge
+
+volumes:
+  traefik_data:
+    name: traefik_data

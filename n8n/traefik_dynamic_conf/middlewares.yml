@@ -1,0 +1,17 @@
+http:
+  middlewares:
+    default-rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+        period: 1m
+    
+    default-security-headers:
+      headers:
+        frameDeny: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsSeconds: 31536000
+        contentSecurityPolicy: "default-src 'self'; frame-ancestors 'self'"
