@@ -3,7 +3,7 @@ services:
     image: mysql:8.0.39
     container_name: wordpress_db
     restart: unless-stopped
-    user: "999:999"  # mysql user
+    # Removed user restriction to avoid permission issues
     environment:
       MYSQL_DATABASE: "${WP_DB_NAME}"
       MYSQL_USER: "${WP_DB_USER}"
@@ -13,6 +13,7 @@ services:
     volumes:
       - db_data:/var/lib/mysql
       - ./mysql-conf:/etc/mysql/conf.d:ro
+      - mysql_logs:/var/log/mysql
     networks:
       - db_network
     healthcheck:
@@ -263,6 +264,8 @@ volumes:
       type: none
       o: bind
       device: ./data/wordpress
+  mysql_logs:
+    # Using a regular Docker volume for logs
 
 networks:
   traefik_network:
@@ -273,4 +276,5 @@ networks:
     driver: bridge
     ipam:
       config:
+        - subnet: 172.20.0.0/24
         - subnet: 172.20.0.0/24
