@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   traefik:
-    image: "traefik:v5.5.3"
+    image: "traefik:v3.5.3"
     restart: always
     container_name: traefik
     security_opt:
