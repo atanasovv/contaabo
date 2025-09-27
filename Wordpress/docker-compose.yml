@@ -15,7 +15,7 @@ services:
       - ./mysql-conf:/etc/mysql/conf.d:ro
       - mysql_logs:/var/log/mysql
     networks:
-      - db_network
+      - default
     healthcheck:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 30s
@@ -63,7 +63,7 @@ services:
       - wordpress_data:/var/www/html
     networks:
       - traefik_network
-      - db_network
+      - default
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=web"
@@ -121,7 +121,7 @@ services:
       MEMORY_LIMIT: "512M"
     networks:
       - traefik_network
-      - db_network
+      - default
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=web"
@@ -206,8 +206,7 @@ services:
       - db_data:/db:ro
       - ./backups:/backups
       - ./scripts:/scripts:ro
-    networks:
-      - db_network
+    
     environment:
       - WP_DB_USER
       - WP_DB_PASSWORD  
@@ -236,8 +235,7 @@ services:
       - db_data:/db:ro
       - ./backups:/backups
       - ./scripts:/scripts:ro
-    networks:
-      - db_network
+
     environment:
       - WP_DB_USER
       - WP_DB_PASSWORD  
@@ -271,10 +269,4 @@ networks:
   traefik_network:
     external: true
     name: traefik_network
-  db_network:
-    internal: true
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/24
-        - subnet: 172.20.0.0/24
+  
