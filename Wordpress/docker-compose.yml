@@ -69,7 +69,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=web"
-      - "traefik.http.routers.wordpress.rule=Host(`wordpress.example.com`)"
+      - "traefik.http.routers.wordpress.rule=Host(`wordpress.coach-bg.com`)"
       - "traefik.http.routers.wordpress.entrypoints=websecure"
       - "traefik.http.routers.wordpress.tls=true"
       - "traefik.http.routers.wordpress.tls.certresolver=mytlschallenge"
