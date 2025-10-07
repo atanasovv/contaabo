@@ -15,7 +15,7 @@ services:
     volumes:
       # Using a regular Docker volume instead of bind mount
       - mysql_data:/var/lib/mysql
-      - ./mysql-conf:/etc/mysql/conf.d:ro
+      - ./mysql-conf:/etc/mysql/conf.d
     networks:
       - default
     healthcheck:
@@ -31,8 +31,8 @@ services:
           cpus: '0.5'
         reservations:
           memory: 256M
-    security_opt:
-      - no-new-privileges:true
+    # security_opt:
+    #   - no-new-privileges:true
     logging:
       driver: "json-file"
       options:
