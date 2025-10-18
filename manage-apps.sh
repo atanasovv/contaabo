@@ -158,7 +158,7 @@ show_status() {
             # Show Tailscale status if available
             if command -v tailscale &> /dev/null; then
                 echo -e "${BLUE}🔗 Tailscale Status:${NC}"
-                if sudo tailscale status &> /dev/null; then
+                if tailscale status &> /dev/null; then
                     TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || echo "N/A")
                     echo -e "${GREEN}✅ Connected - IP: $TAILSCALE_IP${NC}"
                 else
