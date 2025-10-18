@@ -1,0 +1,1 @@
+mysql -u ${MYSQL_USER} -p${MYSQL_PASSWORD} wp_coach-bg < /var/backups/mysql/coach-bg_backup.sql

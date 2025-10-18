@@ -16,6 +16,8 @@ services:
       # Using a regular Docker volume instead of bind mount
       - mysql_data:/var/lib/mysql
       - ./mysql-conf:/etc/mysql/conf.d
+      # mount local folder for the database backups and restores
+      - ./data/mysql/backup:/var/backups/mysql
     networks:
       - default
     healthcheck:
@@ -64,28 +66,29 @@ services:
     volumes:
       - wordpress_data:/var/www/html
       - ./apache-conf:/etc/apache2/conf-enabled
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     networks:
       - traefik_network
       - default
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=web"
-      - "traefik.http.routers.wordpress.rule=Host(`wordpress.coach-bg.com`)"
-      - "traefik.http.routers.wordpress.entrypoints=websecure"
-      - "traefik.http.routers.wordpress.tls=true"
-      - "traefik.http.routers.wordpress.tls.certresolver=mytlschallenge"
-      - "traefik.http.services.wordpress.loadbalancer.server.port=80"
-      # Security headers
-      - "traefik.http.routers.wordpress.middlewares=wordpress-headers@docker"
-      - "traefik.http.middlewares.wordpress-headers.headers.frameDeny=true"
-      - "traefik.http.middlewares.wordpress-headers.headers.sslRedirect=true"
-      - "traefik.http.middlewares.wordpress-headers.headers.browserXSSFilter=true"
-      - "traefik.http.middlewares.wordpress-headers.headers.contentTypeNosniff=true"
-      - "traefik.http.middlewares.wordpress-headers.headers.forceSTSHeader=true"
-      - "traefik.http.middlewares.wordpress-headers.headers.stsSeconds=31536000"
-      - "traefik.http.middlewares.wordpress-headers.headers.stsIncludeSubdomains=true"
-      - "traefik.http.middlewares.wordpress-headers.headers.stsPreload=true"
-      - "traefik.http.middlewares.wordpress-headers.headers.customRequestHeaders.X-Forwarded-Proto=https"
+      - traefik.enable=true
+      - traefik.docker.network=traefik_network
+      # HTTP router (port 80)
+      - traefik.http.routers.wordpress-http.rule=Host(`wordpress.coach-bg.com`)
+      - traefik.http.routers.wordpress-http.entrypoints=web
+      - traefik.http.routers.wordpress-http.service=wordpress
+      # HTTPS router (port 443)  
+      - traefik.http.routers.wordpress-https.rule=Host(`wordpress.coach-bg.com`)
+      - traefik.http.routers.wordpress-https.entrypoints=websecure
+      - traefik.http.routers.wordpress-https.tls=true
+      - traefik.http.routers.wordpress-https.service=wordpress
+      # Service definition
+      - traefik.http.services.wordpress.loadbalancer.server.port=80
     deploy:
       resources:
         limits:
@@ -100,25 +103,18 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost/wp-admin/install.php || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
 
+  # phpMyAdmin - Only accessible via Tailscale VPN
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:5.2.1
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
-    user: "www-data:www-data"
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
       PMA_ARBITRARY: 0
-      PMA_ABSOLUTE_URI: "https://pma.example.com/"
       HIDE_PHP_VERSION: "true"
       UPLOAD_LIMIT: "128M"
       MEMORY_LIMIT: "512M"
@@ -126,25 +122,16 @@ services:
       - traefik_network
       - default
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=web"
-      - "traefik.http.routers.phpmyadmin.rule=Host(`pma.example.com`)"
-      - "traefik.http.routers.phpmyadmin.entrypoints=websecure"
-      - "traefik.http.routers.phpmyadmin.tls=true"
-      - "traefik.http.routers.phpmyadmin.tls.certresolver=mytlschallenge"
-      - "traefik.http.routers.phpmyadmin.middlewares=pma-auth,pma-ipwhitelist"
-      # Basic Authentication (optional, for extra security)
-      - "traefik.http.middlewares.pma-auth.basicauth.users=${PMA_BASIC_AUTH}"
-      # IP Whitelist - Replace YOUR_HOME_IP with your actual home IP address
-      #- "traefik.http.middlewares.pma-ipwhitelist.ipwhitelist.sourcerange=${PMA_ALLOWED_IPS}"
-      # Security headers
-      - "traefik.http.middlewares.pma-headers.headers.frameDeny=true"
-      - "traefik.http.middlewares.pma-headers.headers.sslRedirect=true"
-      - "traefik.http.middlewares.pma-headers.headers.browserXSSFilter=true"
-      - "traefik.http.middlewares.pma-headers.headers.contentTypeNosniff=true"
-      - "traefik.http.middlewares.pma-headers.headers.forceSTSHeader=true"
-      - "traefik.http.middlewares.pma-headers.headers.stsSeconds=31536000"
-      - "traefik.http.middlewares.pma-headers.headers.customRequestHeaders.X-Frame-Options=DENY"
+      - traefik.enable=true
+      - traefik.docker.network=traefik_network
+      - traefik.http.routers.phpmyadmin.rule=Host(`phpmyadmin.internal.coach-bg.com`)
+      - traefik.http.routers.phpmyadmin.entrypoints=websecure
+      - traefik.http.routers.phpmyadmin.tls=true
+      # Restrict access to Tailscale network only
+      - traefik.http.routers.phpmyadmin.middlewares=tailscale-only,secure-headers@file
+      # Tailscale IP whitelist (100.64.0.0/10) + Docker networks + localhost
+      - traefik.http.middlewares.tailscale-only.ipwhitelist.sourcerange=100.64.0.0/10,172.16.0.0/12,127.0.0.1/32
+      - traefik.http.services.phpmyadmin.loadbalancer.server.port=80
     deploy:
       resources:
         limits:
@@ -166,92 +153,7 @@ services:
       retries: 3
       start_period: 30s
 
-  # Backup service for WordPress data and database
-  # backup:
-  #   image: alpine:3.19
-  #   depends_on:
-  #     - db
-  #     - wordpress
-  #   restart: "no"
-  #   volumes:
-  #     - wordpress_data:/wordpress:ro
-  #     - db_data:/db:ro
-  #     - ./backups:/backups
-  #   networks:
-  #     - db_network
-  #   command: |
-  #     sh -c "
-  #       apk add --no-cache mysql-client tar gzip &&
-  #       DATE=$$(date +%Y%m%d_%H%M%S) &&
-  #       echo 'Creating WordPress files backup...' &&
-  #       tar -czf /backups/wordpress_files_$$DATE.tar.gz -C /wordpress . &&
-  #       echo 'Creating database backup...' &&
-  #       mysqldump -h db -u $$WP_DB_USER -p$$WP_DB_PASSWORD $$WP_DB_NAME > /backups/wordpress_db_$$DATE.sql &&
-  #       gzip /backups/wordpress_db_$$DATE.sql &&
-  #       echo 'Backup completed successfully'
-  #     "
-  #   environment:
-  #     - WP_DB_USER
-  #     - WP_DB_PASSWORD  
-  #     - WP_DB_NAME
-  #   profiles:
-  #     - backup
-
-  # # Automated scheduled backup service
-  # backup-scheduler:
-  #   image: alpine:3.19
-  #   depends_on:
-  #     - db
-  #     - wordpress
-  #   restart: unless-stopped
-  #   volumes:
-  #     - wordpress_data:/wordpress:ro
-  #     - mysql_data:/db:ro
-  #     - ./backups:/backups
-  #     - ./scripts:/scripts:ro
-    
-  #   environment:
-  #     - WP_DB_USER
-  #     - WP_DB_PASSWORD  
-  #     - WP_DB_NAME
-  #     - BACKUP_SCHEDULE=${BACKUP_SCHEDULE:-0 2 * * *}  # Default: 2 AM daily
-  #     - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-7}
-  #   command: |
-  #     sh -c '
-  #       apk add --no-cache mysql-client tar gzip &&
-  #       echo "Backup scheduler started with schedule: $$BACKUP_SCHEDULE" &&
-  #       chmod +x /scripts/backup.sh &&
-  #       echo "$$BACKUP_SCHEDULE /scripts/backup.sh" > /etc/crontabs/root &&
-  #       crond -f -l 2
-  #     '
-  #   profiles:
-  #     - scheduled-backup
-
-  # # Restore service for WordPress data and database
-  # restore:
-  #   image: alpine:3.19
-  #   depends_on:
-  #     - db
-  #   restart: "no"
-  #   volumes:
-  #     - wordpress_data:/wordpress
-  #     - mysql_data:/db:ro
-  #     - ./backups:/backups
-  #     - ./scripts:/scripts:ro
-
-  #   environment:
-  #     - WP_DB_USER
-  #     - WP_DB_PASSWORD  
-  #     - WP_DB_NAME
-  #   command: |
-  #     sh -c '
-  #       apk add --no-cache mysql-client tar gzip &&
-  #       chmod +x /scripts/restore.sh &&
-  #       /scripts/restore.sh "$$@"
-  #     '
-  #   profiles:
-  #     - restore
-
+ 
 volumes:
   mysql_data:
     # Using a regular Docker-managed volume instead of bind mount

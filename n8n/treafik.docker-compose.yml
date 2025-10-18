@@ -8,7 +8,7 @@ services:
     command:
       - "--api.dashboard=true"
       - "--api.insecure=false"
-      - "--log.level=INFO"
+      - "--log.level=DEBUG"
       - "--accesslog=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
@@ -16,49 +16,38 @@ services:
       - "--providers.file.directory=/etc/traefik/dynamic_conf"
       - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
-      # Temporarily disable HTTP to HTTPS redirection until certificates are obtained
-      # - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      # - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      # Temporarily disable HTTP to HTTPS redirection for local testing
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.metrics.address=:8082"
-      - "--metrics.prometheus=true"
-      - "--metrics.prometheus.entryPoint=metrics"
-      - "--metrics.prometheus.addEntryPointsLabels=true"
-      - "--metrics.prometheus.addServicesLabels=true"
-      - "--metrics.prometheus.manualRouting=true"
-      - "--certificatesresolvers.mytlschallenge.acme.httpchallenge=true"
-      - "--certificatesresolvers.mytlschallenge.acme.httpchallenge.entrypoint=web"
-      - "--certificatesresolvers.mytlschallenge.acme.email=${SSL_EMAIL}"
-      - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
+      # Remove ACME configuration - using self-signed certificates with Cloudflare
+      # - "--certificatesresolvers.mytlschallenge.acme.httpchallenge=true"
+      # - "--certificatesresolvers.mytlschallenge.acme.httpchallenge.entrypoint=web"
+      # - "--certificatesresolvers.mytlschallenge.acme.email=${SSL_EMAIL}"
+      # - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
     networks:
       - traefik_network
     ports:
       - "80:80"
       - "443:443"
-      - "8082:8082"  # Metrics port for Prometheus
       # Dashboard port is not exposed directly to the internet
     volumes:
       - traefik_data:/letsencrypt
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik_dynamic_conf:/etc/traefik/dynamic_conf
+      - ./certs:/etc/traefik/certs:ro
     labels:
       - "traefik.enable=true"
-      # Dashboard configuration
-      - "traefik.http.routers.traefik-dashboard.rule=Host(`${TRAEFIK_DASHBOARD_HOST:-traefik.${DOMAIN_NAME}}`)"
+      # Dashboard configuration (using self-signed certificates) - Tailscale access only
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.internal.coach-bg.com`)"
       - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
       - "traefik.http.routers.traefik-dashboard.tls=true"
-      - "traefik.http.routers.traefik-dashboard.tls.certresolver=mytlschallenge"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
-      - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth,secure-headers@file"
-      # Metrics configuration
-      - "traefik.http.routers.metrics.rule=Host(`${METRICS_HOST:-metrics.${DOMAIN_NAME}}`)"
-      - "traefik.http.routers.metrics.service=prometheus@internal"
-      - "traefik.http.routers.metrics.entrypoints=metrics"
-      - "traefik.http.routers.metrics.middlewares=metrics-auth"
-      - "traefik.http.services.prometheus.loadbalancer.server.port=8082"
-      - "traefik.http.middlewares.metrics-auth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
+      - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth@file,secure-headers@file,tailscale-access"
+      # Tailscale IP whitelist - same as phpMyAdmin
+      - "traefik.http.middlewares.tailscale-access.ipwhitelist.sourcerange=100.64.0.0/10,172.16.0.0/12,127.0.0.1/32"
       # Note: In .env file, password hashes must have each $ escaped as $$ (see TRAEFIK-ENV-GUIDE.md)
-      - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_BASIC_AUTH}"
+
       # "traefik.http.middlewares.traefik-ip-whitelist.ipallowlist.sourcerange=127.0.0.1/32,${ADMIN_IP_RANGE}"
       # Add security headers
       # Security headers are now defined in the dynamic configuration file

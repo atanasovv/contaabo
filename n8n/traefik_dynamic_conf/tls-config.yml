@@ -1,0 +1,16 @@
+tls:
+  certificates:
+    - certFile: /etc/traefik/certs/selfsigned.crt
+      keyFile: /etc/traefik/certs/selfsigned.key
+      stores:
+        - default
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /etc/traefik/certs/selfsigned.crt
+        keyFile: /etc/traefik/certs/selfsigned.key
+
+# Optional: Configure TLS options
+  options:
+    default:
+      minVersion: "VersionTLS12"
