@@ -48,12 +48,12 @@ start_service() {
         "traefik")
             echo -e "${GREEN}📡 Starting Traefik...${NC}"
             cd "$TRAEFIK_PATH"
-            docker compose up -d traefik -f 
+            docker compose up -d traefik
             ;;
         "wordpress")
             echo -e "${GREEN}🐳 Starting WordPress stack...${NC}"
             cd "$WORDPRESS_PATH"
-            docker compose up -d
+            docker compose up -d wordpress db
             ;;
         "n8n")
             echo -e "${GREEN}🤖 Starting n8n...${NC}"
