@@ -11,9 +11,10 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Project paths
-TRAEFIK_PATH="/mnt/data2/AI-Projects/contaabo/n8n"
-WORDPRESS_PATH="/mnt/data2/AI-Projects/contaabo/Wordpress"
-N8N_PATH="/mnt/data2/AI-Projects/contaabo/n8n"
+base_PATH=$(pwd)
+TRAEFIK_PATH="$base_PATH/traefik"
+WORDPRESS_PATH="$base_PATH/wordpress"
+N8N_PATH="$base_PATH/n8n"
 
 # Function to show usage
 show_usage() {
@@ -47,7 +48,7 @@ start_service() {
         "traefik")
             echo -e "${GREEN}📡 Starting Traefik...${NC}"
             cd "$TRAEFIK_PATH"
-            docker compose up -d traefik
+            docker compose up -d traefik -f 
             ;;
         "wordpress")
             echo -e "${GREEN}🐳 Starting WordPress stack...${NC}"
