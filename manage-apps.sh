@@ -107,7 +107,7 @@ start_service() {
         "traefik")
             echo -e "${GREEN}📡 Starting Traefik...${NC}"
             cd "$TRAEFIK_PATH"
-            docker compose --env-file "../.env" up -d traefik
+            docker compose --env-file "../.env" up -d traefik error-page
             ;;
         "wordpress")
             echo -e "${GREEN}🐳 Starting WordPress stack...${NC}"
@@ -148,7 +148,7 @@ stop_service() {
         "traefik")
             echo -e "${YELLOW}🛑 Stopping Traefik...${NC}"
             cd "$TRAEFIK_PATH"
-            docker compose --env-file "../.env" down traefik
+            docker compose --env-file "../.env" down traefik error-page
             ;;
         "wordpress")
             echo -e "${YELLOW}🛑 Stopping WordPress stack...${NC}"
