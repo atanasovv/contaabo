@@ -94,7 +94,6 @@ services:
   
 volumes:
   n8n_data:
-  traefik_data:
   db_storage:
 
 networks:
