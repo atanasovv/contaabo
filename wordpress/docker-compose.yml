@@ -110,7 +110,7 @@ services:
 
   # phpMyAdmin - Only accessible via Tailscale VPN
   phpmyadmin:
-    image: phpmyadmin/phpmyadmin:5.2.3
+    image: phpmyadmin/phpmyadmin:latest
     container_name: phpmyadmin
     depends_on:
       db:
@@ -126,8 +126,6 @@ services:
       HIDE_PHP_VERSION: "true"
       UPLOAD_LIMIT: "128M"
       MEMORY_LIMIT: "512M"
-    volumes:
-      - ./apache-conf-phpmyadmin:/etc/apache2/conf-enabled
     networks:
       - traefik_network
       - default
