@@ -136,7 +136,7 @@ services:
       # Restrict access to Tailscale network only
       - traefik.http.routers.phpmyadmin.middlewares=tailscale-only,secure-headers@file
       # Tailscale IP whitelist + Docker networks + localhost
-      - traefik.http.middlewares.tailscale-only.ipwhitelist.sourcerange=${ADMIN_IP_RANGE}
+      - traefik.http.middlewares.tailscale-only.ipallowlist.sourcerange=${ADMIN_IP_RANGE}
       - traefik.http.services.phpmyadmin.loadbalancer.server.port=80
     deploy:
       resources:

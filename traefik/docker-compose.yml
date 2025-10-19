@@ -10,7 +10,7 @@ services:
     command:
       - "--api.dashboard=true"
       - "--api.insecure=false"
-      - "--log.level=DEBUG"
+      - "--log.level=INFO"
       - "--accesslog=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
@@ -46,8 +46,8 @@ services:
       - "traefik.http.routers.traefik-dashboard.tls=true"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
       - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth@file,secure-headers@file,tailscale-access"
-      # Tailscale IP whitelist - same as phpMyAdmin
-      - "traefik.http.middlewares.tailscale-access.ipwhitelist.sourcerange=${ADMIN_IP_RANGE}"
+      # Tailscale IP allowlist - same as phpMyAdmin (updated from deprecated ipallowlist)
+      - "traefik.http.middlewares.tailscale-access.ipallowlist.sourcerange=${ADMIN_IP_RANGE}"
       # Note: In .env file, password hashes must have each $ escaped as $$ (see TRAEFIK-ENV-GUIDE.md)
 
       # "traefik.http.middlewares.traefik-ip-whitelist.ipallowlist.sourcerange=127.0.0.1/32,${ADMIN_IP_RANGE}"
