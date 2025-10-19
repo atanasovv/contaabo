@@ -121,6 +121,7 @@ services:
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
       PMA_ARBITRARY: 0
       HIDE_PHP_VERSION: "true"
       UPLOAD_LIMIT: "128M"
