@@ -38,20 +38,16 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik_dynamic_conf:/etc/traefik/dynamic_conf
       - ./certs:/etc/traefik/certs:ro
-    labels:      -"traefik.enable=true"
+    labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik-dashboard.rule=Host(`${TRAEFIK_HOST}`)"
       - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
       - "traefik.http.routers.traefik-dashboard.tls=true"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      # Only Tailscale access and security headers (no basic auth)
       - "traefik.http.routers.traefik-dashboard.middlewares=secure-headers@file,tailscale-access"
       - "traefik.http.middlewares.tailscale-access.ipallowlist.sourcerange=${ADMIN_IP_RANGE}"
-      # Note: In .env file, password hashes must have each $ escaped as $$ (see TRAEFIK-ENV-GUIDE.md)
-
-      # "traefik.http.middlewares.traefik-ip-whitelist.ipallowlist.sourcerange=127.0.0.1/32,${ADMIN_IP_RANGE}"
-      # Add security headers
-      # Security headers are now defined in the dynamic configuration file
-
+     
 networks:
   traefik_network:
     name: traefik_network

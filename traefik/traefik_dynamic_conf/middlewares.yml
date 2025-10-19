@@ -16,10 +16,7 @@ http:
         stsSeconds: 31536000
         contentSecurityPolicy: "default-src 'self'; frame-ancestors 'self'"
     
-    traefik-auth:
-      basicAuth:
-        users:
-          - "admin:$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi"  # admin:password (change this)
+    # traefik-auth middleware removed - using Tailscale VPN access only
     
     default-security-headers:
       headers:
