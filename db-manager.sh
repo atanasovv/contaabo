@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # Database Management Script for WordPress MySQL Container
@@ -36,20 +35,26 @@ show_usage() {
     echo ""
     echocolor "${GREEN}Usage:${NC}"
     echo "  $0 backup [database_name]           - Backup database (default: $DEFAULT_DB)"
-    echo "  $0 restore <filename> [database_name] - Restore from backup file"
+    echo "  $0 restore <filename> [database_name] [--drop-db] - Restore from backup file"
     echo "  $0 list                             - List available backups"
     echo ""
     echocolor "${GREEN}Examples:${NC}"
     echo "  $0 backup                           # Backup default database ($DEFAULT_DB)"
     echo "  $0 backup my_custom_db              # Backup specific database"
     echo "  $0 restore backup_2024-10-18.sql   # Restore from specific file"
+    echo "  $0 restore backup_2024-10-18.sql wordpress_db --drop-db # Drop and recreate DB first"
     echo "  $0 list                             # Show all backup files"
+    echo ""
+    echocolor "${GREEN}Options:${NC}"
+    echo "  --drop-db                           # Drop and recreate database before restore (recommended)"
     echo ""
     echocolor "${GREEN}Notes:${NC}"
     echo "  • Backups are stored in: $BACKUP_DIR"
     echo "  • Files are compressed with gzip (.sql.gz)"
     echo "  • Container must be running: $DB_CONTAINER"
+    echo "  • Use --drop-db to avoid duplicate key errors"
 }
+
 # Function to check if container is running
 check_container() {
     if ! docker ps | grep -q "$DB_CONTAINER"; then
@@ -99,13 +104,21 @@ backup_database() {
 restore_database() {
     local BACKUP_FILENAME="$1"
     local DB_NAME="${2:-$DEFAULT_DB}"
+    local DROP_DB=false
+    
+    # Check for --drop-db flag
+    for arg in "$@"; do
+        if [ "$arg" = "--drop-db" ]; then
+            DROP_DB=true
+        fi
+    done
     
     if [ -z "$BACKUP_FILENAME" ]; then
         echocolor "${RED}❌ Backup filename is required for restore${NC}"
         echocolor "${YELLOW}Available backups:${NC}"
         list_backups
         echo ""
-        echocolor "${YELLOW}Usage: $0 restore <filename> [database_name]${NC}"
+        echocolor "${YELLOW}Usage: $0 restore <filename> [database_name] [--drop-db]${NC}"
         exit 1
     fi
     
@@ -138,7 +151,14 @@ restore_database() {
     fi
     
     echocolor "${YELLOW}♻️  Restoring database '$DB_NAME' from '$(basename "$BACKUP_FILE_PATH")'...${NC}"
-    echocolor "${YELLOW}⚠️  This will overwrite existing data in database '$DB_NAME'${NC}"
+    
+    if [ "$DROP_DB" = true ]; then
+        echocolor "${YELLOW}⚠️  This will DROP and recreate the database '$DB_NAME' (all existing data will be lost!)${NC}"
+    else
+        echocolor "${YELLOW}⚠️  This will restore into existing database '$DB_NAME' (may cause duplicate key errors)${NC}"
+        echocolor "${YELLOW}💡 Tip: Use --drop-db flag to avoid duplicate key errors${NC}"
+    fi
+    
     echocolor "${YELLOW}Continue? (y/N): ${NC}"
     read -r CONFIRM
     
@@ -146,6 +166,17 @@ restore_database() {
         echocolor "${YELLOW}📋 Restore cancelled${NC}"
         exit 0
     fi
+    
+    # Drop and recreate database if requested
+    if [ "$DROP_DB" = true ]; then
+        echocolor "${YELLOW}🗑️  Dropping database '$DB_NAME'...${NC}"
+        docker exec "$DB_CONTAINER" sh -c "mysql -u\$MYSQL_USER -p\$MYSQL_PASSWORD -e 'DROP DATABASE IF EXISTS \`$DB_NAME\`;'"
+        
+        echocolor "${YELLOW}🆕 Creating database '$DB_NAME'...${NC}"
+        docker exec "$DB_CONTAINER" sh -c "mysql -u\$MYSQL_USER -p\$MYSQL_PASSWORD -e 'CREATE DATABASE \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;'"
+    fi
+    
+    echocolor "${YELLOW}📥 Importing data...${NC}"
     
     # Restore based on file extension
     case "$BACKUP_FILE_PATH" in
@@ -157,9 +188,19 @@ restore_database() {
             ;;
     esac
     
-    echocolor "${GREEN}✅ Restore completed successfully${NC}"
-    echocolor "${GREEN}   Database: $DB_NAME${NC}"
-    echocolor "${GREEN}   From: $(basename "$BACKUP_FILE_PATH")${NC}"
+    if [ $? -eq 0 ]; then
+        echocolor "${GREEN}✅ Restore completed successfully${NC}"
+        echocolor "${GREEN}   Database: $DB_NAME${NC}"
+        echocolor "${GREEN}   From: $(basename "$BACKUP_FILE_PATH")${NC}"
+        if [ "$DROP_DB" = true ]; then
+            echocolor "${GREEN}   Method: Clean restore (database recreated)${NC}"
+        else
+            echocolor "${GREEN}   Method: Merge restore (into existing database)${NC}"
+        fi
+    else
+        echocolor "${RED}❌ Restore failed${NC}"
+        exit 1
+    fi
 }
 
 # Function to list backup files
@@ -235,7 +276,9 @@ case $COMMAND in
         backup_database "$2"
         ;;
     restore)
-        restore_database "$2" "$3"
+        # Pass all arguments except the first one to restore_database
+        shift
+        restore_database "$@"
         ;;
     list)
         list_backups
