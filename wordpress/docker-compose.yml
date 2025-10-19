@@ -110,8 +110,8 @@ services:
 
   # phpMyAdmin - Only accessible via Tailscale VPN
   phpmyadmin:
-    image: phpmyadmin/phpmyadmin:5.2.3-fpm-alpine
-
+    image: phpmyadmin/phpmyadmin:5.2.3-apache
+    container_name: phpmyadmin
     depends_on:
       db:
         condition: service_healthy
