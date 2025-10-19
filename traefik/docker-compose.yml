@@ -51,6 +51,8 @@ services:
       image: nginx:alpine
       container_name: error_page
       restart: unless-stopped
+      env_file:
+      - ../.env
       volumes:
         - ./error-page/index.html:/usr/share/nginx/html/index.html:ro
         - ./error-page/nginx.conf:/etc/nginx/conf.d/default.conf:ro
