@@ -52,8 +52,8 @@ services:
       container_name: error_page
       restart: unless-stopped
       volumes:
-        - ./index.html:/usr/share/nginx/html/index.html:ro
-        - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+        - ./error-page/index.html:/usr/share/nginx/html/index.html:ro
+        - ./error-page/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       networks:
         - traefik_network
       labels:
