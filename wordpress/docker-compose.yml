@@ -169,11 +169,8 @@ volumes:
     # Using a regular Docker-managed volume instead of bind mount
     # This prevents permission issues during initialization
   wordpress_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./data/wordpress
+    # Using a regular Docker-managed volume like mysql_data
+    # This avoids permission issues entirely
 
 networks:
   traefik_network:
