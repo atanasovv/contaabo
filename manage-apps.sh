@@ -48,18 +48,18 @@ start_service() {
         "traefik")
             echo -e "${GREEN}📡 Starting Traefik...${NC}"
             cd "$TRAEFIK_PATH"
-            docker compose up -d traefik
+            docker compose --env-file "../.env" up -d traefik
             ;;
         "wordpress")
             echo -e "${GREEN}🐳 Starting WordPress stack...${NC}"
             cd "$WORDPRESS_PATH"
-            docker compose up -d wordpress db
+            docker compose --env-file "../.env" up -d wordpress db
             ;;
         "n8n")
             echo -e "${GREEN}🤖 Starting n8n...${NC}"
             cd "$N8N_PATH"
             if [ -f "docker-compose.yml" ]; then
-                docker compose up -d n8n
+                docker compose --env-file "../.env" up -d n8n
             else
                 echo -e "${YELLOW}⚠️  n8n configuration not found${NC}"
             fi
@@ -67,7 +67,7 @@ start_service() {
         "phpmyadmin")
             echo -e "${GREEN}🗃️  Starting phpMyAdmin...${NC}"
             cd "$WORDPRESS_PATH"
-            docker compose up -d phpmyadmin
+            docker compose --env-file "../.env" up -d phpmyadmin
             ;;
         "all")
             echo -e "${GREEN}🚀 Starting all services...${NC}"
@@ -89,18 +89,18 @@ stop_service() {
         "traefik")
             echo -e "${YELLOW}🛑 Stopping Traefik...${NC}"
             cd "$TRAEFIK_PATH"
-            docker compose down traefik
+            docker compose --env-file "../.env" down traefik
             ;;
         "wordpress")
             echo -e "${YELLOW}🛑 Stopping WordPress stack...${NC}"
             cd "$WORDPRESS_PATH"
-            docker compose down
+            docker compose --env-file "../.env" down
             ;;
         "n8n")
             echo -e "${YELLOW}🛑 Stopping n8n...${NC}"
             cd "$N8N_PATH"
             if [ -f "docker-compose.yml" ]; then
-                docker compose down n8n
+                docker compose --env-file "../.env" down n8n
             else
                 echo -e "${YELLOW}⚠️  n8n configuration not found${NC}"
             fi
@@ -108,8 +108,8 @@ stop_service() {
         "phpmyadmin")
             echo -e "${YELLOW}🛑 Stopping phpMyAdmin...${NC}"
             cd "$WORDPRESS_PATH"
-            docker compose stop phpmyadmin
-            docker compose rm -f phpmyadmin
+            docker compose --env-file "../.env" stop phpmyadmin
+            docker compose --env-file "../.env" rm -f phpmyadmin
             ;;
         "all")
             echo -e "${YELLOW}🛑 Stopping all services...${NC}"
