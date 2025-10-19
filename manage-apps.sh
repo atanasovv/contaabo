@@ -16,6 +16,65 @@ TRAEFIK_PATH="$base_PATH/traefik"
 WORDPRESS_PATH="$base_PATH/wordpress"
 N8N_PATH="$base_PATH/n8n"
 
+# Function to display container status with colors
+show_container_status() {
+    local filter_pattern="$1"
+    local title="$2"
+    
+    echo -e "${BLUE}$title${NC}"
+    
+    # Get all containers first
+    local all_containers
+    all_containers=$(docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}")
+    
+    # Filter containers (with error handling)
+    local containers
+    containers=$(echo "$all_containers" | grep -E "$filter_pattern" 2>/dev/null || true)
+    
+    if [ -n "$containers" ]; then
+        # Count lines to see if we have more than just header
+        local line_count
+        line_count=$(echo "$containers" | wc -l)
+        
+        if [ "$line_count" -gt 1 ]; then
+            # Show header if it exists
+            if echo "$containers" | head -1 | grep -q "NAMES"; then
+                echo "$containers" | head -1
+                # Process data lines with colors
+                echo "$containers" | tail -n +2 | while read -r line; do
+                    if [ -n "$line" ]; then
+                        if echo "$line" | grep -q "Up"; then
+                            echo -e "${GREEN}$line${NC}"
+                        elif echo "$line" | grep -q "Exited"; then
+                            echo -e "${RED}$line${NC}"
+                        else
+                            echo -e "${YELLOW}$line${NC}"
+                        fi
+                    fi
+                done
+            else
+                # No header, just show the containers
+                echo "$containers" | while read -r line; do
+                    if [ -n "$line" ]; then
+                        if echo "$line" | grep -q "Up"; then
+                            echo -e "${GREEN}$line${NC}"
+                        elif echo "$line" | grep -q "Exited"; then
+                            echo -e "${RED}$line${NC}"
+                        else
+                            echo -e "${YELLOW}$line${NC}"
+                        fi
+                    fi
+                done
+            fi
+        else
+            echo -e "${YELLOW}No containers found${NC}"
+        fi
+    else
+        echo -e "${YELLOW}No containers found${NC}"
+    fi
+    echo ""
+}
+
 # Function to show usage
 show_usage() {
     echo -e "${BLUE}📋 Application Management Script${NC}"
@@ -59,7 +118,7 @@ start_service() {
             echo -e "${GREEN}🤖 Starting n8n...${NC}"
             cd "$N8N_PATH"
             if [ -f "docker-compose.yml" ]; then
-                docker compose --env-file "../.env" up -d n8n
+                docker compose --env-file "../.env" up -d n8n postgres
             else
                 echo -e "${YELLOW}⚠️  n8n configuration not found${NC}"
             fi
@@ -100,7 +159,7 @@ stop_service() {
             echo -e "${YELLOW}🛑 Stopping n8n...${NC}"
             cd "$N8N_PATH"
             if [ -f "docker-compose.yml" ]; then
-                docker compose --env-file "../.env" down n8n
+                docker compose --env-file "../.env" down n8n postgres
             else
                 echo -e "${YELLOW}⚠️  n8n configuration not found${NC}"
             fi
@@ -116,6 +175,7 @@ stop_service() {
             stop_service "n8n"
             stop_service "wordpress"  
             stop_service "traefik"
+            stop_service "phpmyadmin"
             ;;
         *)
             echo -e "${RED}❌ Unknown service: $1${NC}"
@@ -137,24 +197,19 @@ restart_service() {
 show_status() {
     case $1 in
         "traefik")
-            echo -e "${BLUE}📡 Traefik Status:${NC}"
-            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(traefik|Names)" || echo "Traefik not running"
+            show_container_status "(traefik|Names)" "📡 Traefik Status:"
             ;;
         "wordpress")
-            echo -e "${BLUE}🐳 WordPress Stack Status:${NC}"
-            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(wordpress|mysql|phpmyadmin|Names)" || echo "WordPress stack not running"
+            show_container_status "(wordpress|mysql|Names)" "🐳 WordPress Stack Status:"
             ;;
         "n8n")
-            echo -e "${BLUE}🤖 n8n Status:${NC}"
-            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(n8n|Names)" || echo "n8n not running"
+            show_container_status "(n8n|postgres|Names)" "🤖 n8n Stack Status:"
             ;;
         "phpmyadmin")
-            echo -e "${BLUE}🗃️  phpMyAdmin Status:${NC}"
-            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(phpmyadmin|Names)" || echo "phpMyAdmin not running"
+            show_container_status "(phpmyadmin|Names)" "🗃️  phpMyAdmin Status:"
             ;;
         "all")
-            echo -e "${BLUE}📊 All Services Status:${NC}"
-            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(traefik|wordpress|mysql|phpmyadmin|n8n|Names)" || echo "No services running"
+            show_container_status "(traefik|wordpress|mysql|phpmyadmin|n8n|postgres|Names)" "📊 All Services Status:"
             echo ""
             # Show Tailscale status if available
             if command -v tailscale &> /dev/null; then
