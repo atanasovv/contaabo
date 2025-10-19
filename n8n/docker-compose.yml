@@ -27,9 +27,8 @@ services:
       - traefik.http.middlewares.n8n-headers.headers.STSIncludeSubdomains=true
       - traefik.http.middlewares.n8n-headers.headers.STSPreload=true
       # Tailscale IP allowlist for secure access (same as phpMyAdmin and Traefik)
-      - traefik.http.middlewares.n8n-tailscale-access.ipallowlist.sourcerange=${ADMIN_IP_RANGE}
       # Apply the middleware to the router (security headers + Tailscale access)
-      - traefik.http.routers.n8n.middlewares=n8n-headers@docker,n8n-tailscale-access@docker
+      - traefik.http.routers.n8n.middlewares=n8n-headers@docker
       # Make sure Traefik knows which port to use for n8n
       - traefik.http.services.n8n.loadbalancer.server.port=5678
     environment:
