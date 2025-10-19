@@ -126,8 +126,6 @@ services:
       HIDE_PHP_VERSION: "true"
       UPLOAD_LIMIT: "128M"
       MEMORY_LIMIT: "512M"
-    volumes:
-      - ./apache-conf-phpmyadmin:/etc/apache2/conf-enabled
     networks:
       - traefik_network
       - default
