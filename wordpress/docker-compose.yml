@@ -110,7 +110,7 @@ services:
 
   # phpMyAdmin - Only accessible via Tailscale VPN
   phpmyadmin:
-    image: phpmyadmin/phpmyadmin:5.2.3-apache
+    image: phpmyadmin/phpmyadmin:5.2.3
     container_name: phpmyadmin
     depends_on:
       db:
