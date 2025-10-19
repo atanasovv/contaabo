@@ -38,15 +38,13 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik_dynamic_conf:/etc/traefik/dynamic_conf
       - ./certs:/etc/traefik/certs:ro
-    labels:
+    labels:      -"traefik.enable=true"
       - "traefik.enable=true"
-      # Dashboard configuration (using self-signed certificates) - Tailscale access only
       - "traefik.http.routers.traefik-dashboard.rule=Host(`${TRAEFIK_HOST}`)"
       - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
       - "traefik.http.routers.traefik-dashboard.tls=true"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
-      - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth@file,secure-headers@file,tailscale-access"
-      # Tailscale IP allowlist - same as phpMyAdmin (updated from deprecated ipallowlist)
+      - "traefik.http.routers.traefik-dashboard.middlewares=secure-headers@file,tailscale-access"
       - "traefik.http.middlewares.tailscale-access.ipallowlist.sourcerange=${ADMIN_IP_RANGE}"
       # Note: In .env file, password hashes must have each $ escaped as $$ (see TRAEFIK-ENV-GUIDE.md)
 

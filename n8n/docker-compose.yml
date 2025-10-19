@@ -16,7 +16,7 @@ services:
       - traefik.http.routers.n8n.rule=Host(`${N8N_HOST}`)
       - traefik.http.routers.n8n.tls=true
       - traefik.http.routers.n8n.entrypoints=web,websecure
-      - traefik.http.routers.n8n.tls.certresolver=mytlschallenge
+      # Using self-signed certificates from dynamic config (no cert resolver needed)
       # Define security headers middleware
       - traefik.http.middlewares.n8n-headers.headers.SSLRedirect=true
       - traefik.http.middlewares.n8n-headers.headers.STSSeconds=315360000
@@ -26,8 +26,10 @@ services:
       - traefik.http.middlewares.n8n-headers.headers.SSLHost=${BASE_DOMAIN_NAME}
       - traefik.http.middlewares.n8n-headers.headers.STSIncludeSubdomains=true
       - traefik.http.middlewares.n8n-headers.headers.STSPreload=true
-      # Apply the middleware to the router
-      - traefik.http.routers.n8n.middlewares=n8n-headers@docker
+      # Tailscale IP allowlist for secure access (same as phpMyAdmin and Traefik)
+      - traefik.http.middlewares.n8n-tailscale-access.ipallowlist.sourcerange=${ADMIN_IP_RANGE}
+      # Apply the middleware to the router (security headers + Tailscale access)
+      - traefik.http.routers.n8n.middlewares=n8n-headers@docker,n8n-tailscale-access@docker
       # Make sure Traefik knows which port to use for n8n
       - traefik.http.services.n8n.loadbalancer.server.port=5678
     environment:
@@ -58,10 +60,10 @@ services:
       # Required Encryption key for securing sensitive data
       - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
       
-      # Optional: Basic Authentication
-      - N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE:-false}
-      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-}
-      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD:-}
+      # # Optional: Basic Authentication
+      # - N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE:-false}
+      # - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-}
+      # - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD:-}
     links:
       - postgres
     volumes:
