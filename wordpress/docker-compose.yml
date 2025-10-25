@@ -86,7 +86,7 @@ services:
       - traefik.http.routers.wordpress-http.rule=Host(`${WORDPRESS_HOST}`)
       - traefik.http.routers.wordpress-http.entrypoints=web
       - traefik.http.routers.wordpress-http.service=wordpress
-      # HTTPS router (port 443)  
+      # HTTPS router (port 443)
       - traefik.http.routers.wordpress-https.rule=Host(`${WORDPRESS_HOST}`)
       - traefik.http.routers.wordpress-https.entrypoints=websecure
       - traefik.http.routers.wordpress-https.tls=true
@@ -134,7 +134,6 @@ services:
       MAX_EXECUTION_TIME: 600
     volumes:
       - phpmyadmin_sessions:/sessions
-      - ./apache-conf-phpmyadmin:/etc/apache2/conf-enabled
     networks:
       - traefik_network
       - default
@@ -170,7 +169,7 @@ services:
       retries: 3
       start_period: 30s
 
- 
+
 volumes:
   mysql_data:
     # Using a regular Docker-managed volume instead of bind mount
@@ -185,4 +184,3 @@ networks:
   traefik_network:
     external: true
     name: traefik_network
-  
