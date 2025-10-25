@@ -341,10 +341,6 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-# Initialize
-check_container
-ensure_backup_dir
-
 COMMAND=$1
 
 case $COMMAND in
