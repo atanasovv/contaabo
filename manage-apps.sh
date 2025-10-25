@@ -112,7 +112,7 @@ start_service() {
         "wordpress")
             echo -e "${GREEN}🐳 Starting WordPress stack...${NC}"
             cd "$WORDPRESS_PATH"
-            docker compose --env-file "../.env" up -d wordpress db
+            docker compose --env-file "../.env" up -d wordpress db 
             ;;
         "n8n")
             echo -e "${GREEN}🤖 Starting n8n...${NC}"
