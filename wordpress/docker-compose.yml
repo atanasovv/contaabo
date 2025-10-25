@@ -131,7 +131,7 @@ services:
       PMA_ABSOLUTE_URI: "https://${PHPMYADMIN_HOST}/"
       # Session configuration
 
-    volumes:
+    # volumes:
       # - phpmyadmin_sessions:/sessions
     networks:
       - traefik_network
