@@ -119,18 +119,20 @@ services:
     env_file:
       - ../.env
     environment:
-      PMA_HOST: db
-      PMA_PORT: 3306
-      PMA_USER: root
-      PMA_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
-      PMA_ARBITRARY: 0
-      HIDE_PHP_VERSION: "true"
-      UPLOAD_LIMIT: "128M"
-      MEMORY_LIMIT: "512M"
+      - PMA_HOST: db
+      - PMA_PORT: 3306
+      - 
+      - PMA_ARBITRARY=1
+      
+      - PMA_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+      - PMA_ARBITRARY: 0
+      - HIDE_PHP_VERSION: "true"
+      - UPLOAD_LIMIT: "128M"
+      - MEMORY_LIMIT: "512M"
       # Fix token mismatch issues
-      PMA_ABSOLUTE_URI: "https://${PHPMYADMIN_HOST}/"
+      - PMA_ABSOLUTE_URI: "https://${PHPMYADMIN_HOST}/"
       # Session configuration
-      MAX_EXECUTION_TIME: 600
+      - MAX_EXECUTION_TIME: 600
     volumes:
       - phpmyadmin_sessions:/sessions
     networks:
