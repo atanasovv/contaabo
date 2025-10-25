@@ -147,15 +147,15 @@ services:
       # Tailscale IP whitelist + Docker networks + localhost
       - traefik.http.middlewares.tailscale-only.ipallowlist.sourcerange=${ADMIN_IP_RANGE}
       - traefik.http.services.phpmyadmin.loadbalancer.server.port=80
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '0.3'
-        reservations:
-          memory: 128M
-    security_opt:
-      - no-new-privileges:true
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 512M
+    #       cpus: '0.3'
+    #     reservations:
+    #       memory: 128M
+    # security_opt:
+    #   - no-new-privileges:true
     logging:
       driver: "json-file"
       options:
