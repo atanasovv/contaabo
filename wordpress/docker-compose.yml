@@ -132,7 +132,7 @@ services:
       # Session configuration
 
     volumes:
-      - phpmyadmin_sessions:/sessions
+      # - phpmyadmin_sessions:/sessions
     networks:
       - traefik_network
       - default
@@ -161,12 +161,12 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost/index.php || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+    # healthcheck:
+    #   test: ["CMD-SHELL", "curl -f http://localhost/index.php || exit 1"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 30s
 
 
 volumes:
