@@ -128,6 +128,12 @@ services:
       HIDE_PHP_VERSION: "true"
       UPLOAD_LIMIT: "128M"
       MEMORY_LIMIT: "512M"
+      # Fix token mismatch issues
+      PMA_ABSOLUTE_URI: "https://${PHPMYADMIN_HOST}/"
+      # Session configuration
+      MAX_EXECUTION_TIME: 600
+    volumes:
+      - phpmyadmin_sessions:/sessions
     networks:
       - traefik_network
       - default
@@ -171,6 +177,8 @@ volumes:
   wordpress_data:
     # Using a regular Docker-managed volume like mysql_data
     # This avoids permission issues entirely
+  phpmyadmin_sessions:
+    # Persistent sessions for phpMyAdmin to avoid token mismatch
 
 networks:
   traefik_network:
