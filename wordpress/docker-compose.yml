@@ -134,6 +134,7 @@ services:
       MAX_EXECUTION_TIME: 600
     volumes:
       - phpmyadmin_sessions:/sessions
+      - ./apache-conf-phpmyadmin:/etc/apache2/conf-enabled
     networks:
       - traefik_network
       - default
