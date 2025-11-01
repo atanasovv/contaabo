@@ -1,5 +1,4 @@
 <?php
-<?php
 /**
  * Security Headers for phpMyAdmin
  * This file is auto-prepended to every PHP request
