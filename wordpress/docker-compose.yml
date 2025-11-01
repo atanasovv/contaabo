@@ -111,13 +111,13 @@ services:
       PMA_PORT: 3306
       PMA_USER: root
       PMA_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
-      PMA_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
-      # HIDE_PHP_VERSION: "true"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
       UPLOAD_LIMIT: "128M"
       MEMORY_LIMIT: "512M"
       # Fix token mismatch issues
       PMA_ABSOLUTE_URI: "https://${PHPMYADMIN_HOST}/"
-      PMA_CONFIG_BASE64: "PD9waHAKJGNmZ1snQ2hlY2tDb25maWd1cmF0aW9uUGVybWlzc2lvbnMnXSA9IGZhbHNlOwo/Pgo="
+      # Allow arbitrary server connections
+      PMA_ARBITRARY: 1
     networks:
       - traefik_network
       - default
@@ -126,7 +126,7 @@ services:
       - ./php-conf-phpmyadmin/php.ini:/usr/local/etc/php/php.ini:ro
       - ./php-conf-phpmyadmin/security-headers.php:/etc/phpmyadmin/security-headers.php:ro
       # Persistent sessions
-      # - phpmyadmin_sessions:/sessions
+      - phpmyadmin_sessions:/sessions
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik_network
