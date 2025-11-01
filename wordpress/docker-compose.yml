@@ -114,17 +114,17 @@ services:
       MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
       UPLOAD_LIMIT: "128M"
       MEMORY_LIMIT: "512M"
-      # Fix token mismatch issues
-      PMA_ABSOLUTE_URI: "https://${PHPMYADMIN_HOST}/"
-      # Allow arbitrary server connections
-      PMA_ARBITRARY: 1
+      # Disable problematic features
+      PMA_ARBITRARY: 0
+      # Remove absolute URI that might cause issues
+      # PMA_ABSOLUTE_URI: "https://${PHPMYADMIN_HOST}/"
     networks:
       - traefik_network
       - default
     volumes:
-      # Mount PHP configuration
-      - ./php-conf-phpmyadmin/php.ini:/usr/local/etc/php/php.ini:ro
-      - ./php-conf-phpmyadmin/config.user.inc.php:/etc/phpmyadmin/conf.d/config.user.inc.php:ro
+      # Remove custom PHP config that might cause issues
+      # - ./php-conf-phpmyadmin/php.ini:/usr/local/etc/php/php.ini:ro
+      # - ./php-conf-phpmyadmin/config.user.inc.php:/etc/phpmyadmin/conf.d/config.user.inc.php:ro
       # Persistent sessions
       - phpmyadmin_sessions:/sessions
     labels:
