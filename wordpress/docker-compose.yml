@@ -117,6 +117,7 @@ services:
       MEMORY_LIMIT: "512M"
       # Fix token mismatch issues
       PMA_ABSOLUTE_URI: "https://${PHPMYADMIN_HOST}/"
+      PMA_CONFIG_BASE64: "PD9waHAKJGNmZ1snQ2hlY2tDb25maWd1cmF0aW9uUGVybWlzc2lvbnMnXSA9IGZhbHNlOwo/Pgo="
     networks:
       - traefik_network
       - default
