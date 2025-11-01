@@ -124,7 +124,7 @@ services:
     volumes:
       # Mount PHP configuration
       - ./php-conf-phpmyadmin/php.ini:/usr/local/etc/php/php.ini:ro
-      - ./php-conf-phpmyadmin/security-headers.php:/etc/phpmyadmin/security-headers.php:ro
+      - ./php-conf-phpmyadmin/config.user.inc.php:/etc/phpmyadmin/conf.d/config.user.inc.php:ro
       # Persistent sessions
       - phpmyadmin_sessions:/sessions
     labels:
