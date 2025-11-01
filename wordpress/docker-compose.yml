@@ -126,7 +126,7 @@ services:
       - ./php-conf-phpmyadmin/php.ini:/usr/local/etc/php/php.ini:ro
       - ./php-conf-phpmyadmin/security-headers.php:/etc/phpmyadmin/security-headers.php:ro
       # Persistent sessions
-      - phpmyadmin_sessions:/sessions
+      # - phpmyadmin_sessions:/sessions
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik_network
