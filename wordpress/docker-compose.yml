@@ -117,13 +117,15 @@ services:
       MEMORY_LIMIT: "512M"
       # Fix token mismatch issues
       PMA_ABSOLUTE_URI: "https://${PHPMYADMIN_HOST}/"
-      # Session configuration
-
-    # volumes:
-      # - phpmyadmin_sessions:/sessions
     networks:
       - traefik_network
       - default
+    volumes:
+      # Mount PHP configuration
+      - ./php-conf-phpmyadmin/php.ini:/usr/local/etc/php/php.ini:ro
+      - ./php-conf-phpmyadmin/security-headers.php:/etc/phpmyadmin/security-headers.php:ro
+      # Persistent sessions
+      - phpmyadmin_sessions:/sessions
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik_network
@@ -135,15 +137,7 @@ services:
       # Tailscale IP whitelist + Docker networks + localhost
       - traefik.http.middlewares.tailscale-only.ipallowlist.sourcerange=${ADMIN_IP_RANGE}
       - traefik.http.services.phpmyadmin.loadbalancer.server.port=80
-    # deploy:
-    #   resources:
-    #     limits:
-    #       memory: 512M
-    #       cpus: '0.3'
-    #     reservations:
-    #       memory: 128M
-    # security_opt:
-    #   - no-new-privileges:true
+
     logging:
       driver: "json-file"
       options:
